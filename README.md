@@ -38,5 +38,4 @@ For detailed documentation, see the [docs][https://docs.google.com/document/d/1w
 Contributions are welcome. Please open an issue or submit a pull request.
 
 ## License
-
-[Add your license here]
+This project is license by **MIT**.
