@@ -138,6 +138,3 @@ eventsync-backend/
 Ce projet est sous licence **MIT**.
 
 ---
-
-
-```
