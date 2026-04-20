@@ -1,19 +1,8 @@
-// {
-//   "compilerOptions": {
-//     "module": "ESNext",
-//     "moduleResolution": "bundler",
-//     "target": "ES2023",
-//     "strict": true,
-//     "esModuleInterop": true,
-//     "ignoreDeprecations": "6.0"
-//   }
-// }
-
 {
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "node16",
+    "moduleResolution": "bundler",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -26,6 +15,6 @@
     "emitDecoratorMetadata": true,
     "types": ["node"]
   },
-  "include": ["src/**/*", "script.ts"],
-  "exclude": ["node_modules", "dist", "config/generated"]
+  "include": ["src/**/*", "src/config/lib"],
+  "exclude": ["node_modules", "dist", "src/generated"]
 }
