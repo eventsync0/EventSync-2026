@@ -50,4 +50,18 @@ export class AuthController {
             res.status(401).json({ error: error instanceof Error ? error.message : "Token refresh failed" });
         }
     }
+
+    logout = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { refreshToken } = req.body;
+            if (!refreshToken) {
+                res.status(400).json({ error: "Refresh token is required" });
+                return;
+            }
+            await AuthService.logout(refreshToken);
+            res.status(200).json({ message: "Logout successful" });
+        } catch (error) {
+            res.status(400).json({ error: error instanceof Error ? error.message : "Logout failed" });
+        }
+    }
 }
