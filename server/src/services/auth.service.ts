@@ -75,6 +75,6 @@ export class AuthService {
   }
 
   static async logout(token: string) {
-    await prisma.refreshToken.delete({ where: { token } });
+    await prisma.refreshToken.deleteMany({ where: { token } });
   }
 }
