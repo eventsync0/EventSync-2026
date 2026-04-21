@@ -51,6 +51,8 @@ DATABASE_URL="postgresql://username:password@localhost:5432/eventdb?schema=publi
 
 ```bash
 npm run prisma:generate
+npx prisma migrate
+npm run seed #to generate the adminUser
 ```
 
 5. **Lancement du serveur**
@@ -97,6 +99,7 @@ eventsync-backend/
 | `npm run dev`              | Lance le serveur en développement        |
 | `npm run build`            | Compile TypeScript vers JavaScript       |
 | `npm start`                | Lance le serveur en production           |
+| `npm run seed`             | créer admin user                         |
 | `npm run prisma:generate`  | Génère le client Prisma                  |
 | `npx prisma studio`        | Ouvre l'interface Prisma Studio          |
 | `npx prisma migrate dev`   | Crée et applique les migrations          |
