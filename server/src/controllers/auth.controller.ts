@@ -23,4 +23,31 @@ export class AuthController {
         }
     }
 
+    login = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { email, password } = req.body;
+            if (!email || !password) {
+                res.status(400).json({ error: "Email and password are required" });
+                return;
+            }
+            const { user, accessToken, refreshToken } = await AuthService.login(email, password);
+            res.status(200).json({ message: "Login successful", user, accessToken, refreshToken });
+        } catch (error) {
+            res.status(401).json({ error: error instanceof Error ? error.message : "Login failed" });
+        }
+    }
+
+    refresh = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { refreshToken } = req.body;
+            if (!refreshToken) {
+                res.status(400).json({ error: "Refresh token is required" });
+                return;
+            }
+            const { accessToken } = await AuthService.refreshToken(refreshToken);
+            res.status(200).json({ message: "Token refreshed successfully", accessToken });
+        } catch (error) {
+            res.status(401).json({ error: error instanceof Error ? error.message : "Token refresh failed" });
+        }
+    }
 }
