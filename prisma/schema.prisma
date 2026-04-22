@@ -68,3 +68,25 @@ model Question {
   sessionId   String
   session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
+
+model Speaker {
+  id        Int           @id @default(uuid())
+  fullName  String
+  photoUrl  String?
+  bio       String?
+  links     SpeakerLink[]
+  sessions  Session[]     @relation('SessionSpeakers')
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+
+model SpeakerLink {
+  id        Int     @id @default(uuid())
+  speakerId Int
+  platform  String  // ex: 'twitter', 'linkedin', 'website', 'github'
+  url       String
+  speaker   Speaker @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+}
+
+
