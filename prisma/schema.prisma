@@ -70,7 +70,7 @@ model Question {
 }
 
 model Speaker {
-  id        Int           @id @default(uuid())
+  id    String           @id @default(uuid())
   fullName  String
   photoUrl  String?
   bio       String?
@@ -84,7 +84,7 @@ model Speaker {
 model SpeakerLink {
   id        Int     @id @default(uuid())
   speakerId Int
-  platform  String  // ex: 'twitter', 'linkedin', 'website', 'github'
+  platform  String   
   url       String
   speaker   Speaker @relation(fields: [speakerId], references: [id], onDelete: Cascade)
 }
@@ -92,4 +92,3 @@ model SpeakerLink {
 
 
 
- 
