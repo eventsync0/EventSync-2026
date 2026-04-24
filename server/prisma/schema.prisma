@@ -24,3 +24,19 @@ model User {
   createdAt    DateTime @default(now())
   refreshTokens RefreshToken[]
 }
+
+model Room {
+  id       Int       @id @default(autoincrement())
+  name     String
+  capacity Int?
+  sessions Session[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  title     String
+  startTime DateTime
+  endTime   DateTime
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id])
+}
