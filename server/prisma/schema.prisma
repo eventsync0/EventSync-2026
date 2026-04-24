@@ -26,14 +26,14 @@ model User {
 }
 
 model Room {
-  id       Int       @id @default(autoincrement())
+  id       Int       @id @default(uuid())
   name     String
   capacity Int?
   sessions Session[]
 }
 
 model Session {
-  id        Int      @id @default(autoincrement())
+  id        Int      @id @default(uuid())
   title     String
   startTime DateTime
   endTime   DateTime
