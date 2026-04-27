@@ -29,4 +29,18 @@ export class RoomController {
             res.status(500).json({ message: "Internal server error"})
         }
     }
+
+    deleteRoom = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = req.params.id as string;
+        if (!id) {
+            res.status(400).json({ message: "Id required" });
+            return;
+        }
+        await this.roomService.deleteRoom(id);
+        res.status(200).json({ message: `Room deleted with id: ${id}`});
+    } catch (error) {
+        res.status(404).json({ message: "Room not found" });
+    }
+}
 }

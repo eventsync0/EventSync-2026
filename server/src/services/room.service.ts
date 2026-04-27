@@ -11,4 +11,8 @@ export class RoomService {
     async getRooms() {
         return prisma.room.findMany({ orderBy: { name: 'asc' } })
     }
+
+    async deleteRoom(id: string) {
+        return prisma.room.delete({ where: {id} })
+    }
 }
