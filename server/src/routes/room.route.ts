@@ -4,6 +4,6 @@ import { Router } from "express";
 const router = Router();
 const roomController = new RoomController();
 
-router.post("/room", roomController.postRoom);
+router.post("/", roomController.postRoom);
 
 export default router;

@@ -1,6 +1,5 @@
 import { RoomService } from "../services/room.service";
-import { error } from "node:console";
-import e, { Request, Response } from 'express';
+import { Request, Response } from 'express';
 
 export class RoomController {
     private roomService: RoomService;
@@ -10,12 +9,13 @@ export class RoomController {
 
     postRoom = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { id, name } = req.body;
-            if (!id || !name) {
-                res.status(400).json({ message: "Name and id required" })
+            const { name } = req.body;
+            if (!name) {
+                res.status(400).json({ message: "Name and id required" });
+                return;
             }
-            const room = await this.roomService.postRoom(id, name);
-            res.status(201).json({ message: "Room Created" })
+            const room = await this.roomService.postRoom(name);
+            res.status(201).json({ message: "Room Created", room })
         } catch (error) {
             res.status(400).json({ message: "...." })
         }

@@ -1,10 +1,11 @@
 import { prisma } from "../config/lib/prisma";
 
 export class RoomService {
-    async postRoom(id: string, name: string) {
+    async postRoom(name: string) {
+        
         return prisma.room.create({
-            data: {id, name},
-            select: {id: true, name: true}
+            data: {name},
+            select: { name: true}
         })
     }
 }

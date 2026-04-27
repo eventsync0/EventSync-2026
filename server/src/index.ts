@@ -16,7 +16,7 @@ app.get('/api/health', (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
-app.use('api/room', roomRoutes)
+app.use('/api/room', roomRoutes)
 
 app.listen(PORT, () => {
   console.log(`Server is running on port http://localhost:${PORT}`)
