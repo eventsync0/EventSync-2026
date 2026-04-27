@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import "dotenv/config";
 import authRoutes from './routes/auth.route'
-
+import roomRoutes from './routes/rooms.route'
 const app = express()
 
 const PORT = Number(process.env.PORT) || 3001
@@ -16,6 +16,7 @@ app.get('/api/health', (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/room', roomRoutes)
 
 app.listen(PORT, () => {
   console.log(`Server is running on port http://localhost:${PORT}`)
