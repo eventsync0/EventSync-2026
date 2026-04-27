@@ -20,4 +20,13 @@ export class RoomController {
             res.status(400).json({ message: "...." })
         }
     }
+
+    getRooms = async (req: Request, res: Response):  Promise<void> => {
+        try {
+            const rooms = await this.roomService.getRooms();
+            res.json({ data: rooms})
+        } catch (error) {
+            res.status(500).json({ message: "Internal server error"})
+        }
+    }
 }
