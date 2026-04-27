@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import "dotenv/config";
 import authRoutes from './routes/auth.route'
-import roomRoutes from './routes/room.route'
+import roomRoutes from './routes/rooms.route'
 const app = express()
 
 const PORT = Number(process.env.PORT) || 3001
