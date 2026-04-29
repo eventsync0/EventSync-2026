@@ -42,4 +42,17 @@ model Session {
   room        Room     @relation(fields: [roomId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  questions   Question[]
+}
+
+
+model Question {
+  id          String   @id @default(uuid())
+  content     String
+  authorName  String?
+  upvotes     Int      @default(0)
+  createdAt   DateTime @default(now())
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
