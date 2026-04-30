@@ -2,7 +2,7 @@
 import express from 'express'
 import cors from 'cors'
 import "dotenv/config";
-import authRoutes from './routes/auth.route'
+import adminRoutes from './routes/admin.route'
 import roomRoutes from './routes/rooms.route'
 import sessionRoutes from './routes/session.route'
 
@@ -18,7 +18,7 @@ export const createApp = () => {
         res.json({ status: 'ok' })
     })
 
-    app.use('/api/auth', authRoutes)
+    app.use('/admin', adminRoutes)
     app.use('/api/rooms', roomRoutes)
     app.use('/api/sessions', sessionRoutes)
 
