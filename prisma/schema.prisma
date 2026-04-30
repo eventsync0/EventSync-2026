@@ -25,6 +25,18 @@ model User {
   refreshTokens RefreshToken[]
 }
 
+model Event {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  location    String
+  sessions    Session[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Room {
   id       String       @id @default(uuid())
   name     String
@@ -42,7 +54,7 @@ model Session {
   room        Room     @relation(fields: [roomId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
+  event       Event[]
   questions   Question[]
 }
 
