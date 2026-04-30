@@ -5,6 +5,7 @@ import "dotenv/config";
 import adminRoutes from './routes/admin.route'
 import roomRoutes from './routes/rooms.route'
 import sessionRoutes from './routes/session.route'
+import eventRoutes from './routes/event.route'
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
 
@@ -15,12 +16,13 @@ export const createApp = () => {
     app.use(express.json())
 
     app.get('/api/health', (req, res) => {
-        res.json({ status: 'ok' })
+        res.json({ status: 'API is running' })
     })
 
     app.use('/admin', adminRoutes)
     app.use('/api/rooms', roomRoutes)
     app.use('/api/sessions', sessionRoutes)
+    app.use('/api/events', eventRoutes)
 
     return app
 }

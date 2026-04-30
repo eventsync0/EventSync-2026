@@ -25,7 +25,6 @@ model Admin {
     updatedAt   DateTime     @updatedAt
     refreshTokens RefreshToken[]
 }
-
 model Event {
   id          String       @id @default(uuid())
   title       String
