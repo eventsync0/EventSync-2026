@@ -5,7 +5,7 @@ async function main() {
     console.log('🌱 Début du seeding...');
 
     // 1. Création du compte admin
-    const existing = await prisma.user.findUnique({
+    const existing = await prisma.admin.findUnique({
         where: { email: "admin@eventsync.com" }
     });
 
@@ -16,7 +16,7 @@ async function main() {
     } else {
         const passwordHash = await bcrypt.hash("adminpassword123", 10);
 
-        adminUser = await prisma.user.create({
+        adminUser = await prisma.admin.create({
             data: {
                 name: "Admin",
                 email: "admin@eventsync.com",
@@ -32,7 +32,6 @@ async function main() {
     await prisma.session.deleteMany({});
     await prisma.event.deleteMany({});
     await prisma.room.deleteMany({});
-    await prisma.refreshToken.deleteMany({});
     console.log("✅ Nettoyage terminé");
 
     // 3. Création des salles (Rooms)
@@ -234,7 +233,7 @@ async function main() {
     await prisma.refreshToken.create({
         data: {
             token: "seed-refresh-token-demo-" + Date.now(),
-            userId: adminUser.id,
+            adminId: adminUser.id,
             expiresAt: expiresAt
         }
     });

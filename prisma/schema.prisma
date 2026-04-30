@@ -10,19 +10,20 @@ datasource db {
 model RefreshToken {
     id        String   @id @default(uuid())
     token     String   @unique
-    userId    String
-    user      User     @relation(fields: [userId], references: [id])
+    adminId   String
+    admin     Admin     @relation(fields: [adminId], references: [id])
     expiresAt DateTime
     createdAt DateTime @default(now())
 }
 
-model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  refreshTokens RefreshToken[]
+model Admin {
+    id          String       @id @default(uuid())
+    name        String
+    email       String       @unique
+    passwordHash String 
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    refreshTokens RefreshToken[]
 }
 
 model Event {
@@ -32,9 +33,9 @@ model Event {
   startDate   DateTime
   endDate     DateTime
   location    String
-  sessions    Session[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  sessions    Session[]
 }
 
 model Room {
