@@ -69,11 +69,7 @@ export class AdminService {
   static async me(adminId: string) {
     const admin = await prisma.admin.findUnique({
       where: { id: adminId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
+      select: { id: true, email: true, name: true }
     });
     if (!admin) throw new Error("Admin not found");
     return admin;
