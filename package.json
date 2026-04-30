@@ -1,13 +1,13 @@
 {
   "name": "eventsync-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "dist/index.js",
+  "description": "## 🚀 Technologies utilisées",
+  "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec tsx src/index.ts",
+    "dev": "nodemon --exec tsx src/server.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
     "seed": "tsx prisma/seed.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -17,8 +17,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.7.0",
-    "@prisma/client": "^7.7.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -34,7 +34,8 @@
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
     "nodemon": "^3.1.14",
-    "prisma": "^7.7.0",
+    "prisma": "^7.8.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
