@@ -8,15 +8,21 @@ export const create = async (
   res: Response
 ) => {
   try {
-    const { content, sessionId, authorName } = req.body;
+    const { sessionId, content, authorName } = req.body;
 
     if (!content || !sessionId) {
       return res.status(400).json({ error: "Le contenu et le sessionId sont requis" });
     }
 
+    console.log("-----------------------------------------");
+    console.log("Tentative de recherche Session ID :", sessionId);
+
     const session = await prisma.session.findUnique({
-      where: { id: String(sessionId) }
+      where: { id: sessionId }
     });
+
+    console.log("Résultat Prisma :", session);
+    console.log("-----------------------------------------");
 
     if (!session) return res.status(404).json({ error: "Session introuvable" });
 
