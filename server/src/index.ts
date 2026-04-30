@@ -4,6 +4,7 @@ import "dotenv/config";
 import authRoutes from './routes/auth.route'
 import roomRoutes from './routes/rooms.route'
 import sessionRoutes from './routes/session.route'
+import questionRoutes from './routes/question.routes';
 
 const app = express()
 
@@ -24,3 +25,5 @@ app.use('/api/sessions', sessionRoutes)
 app.listen(PORT, () => {
     console.log(`Server is running on port http://localhost:${PORT}`)
 })
+
+app.use('/api/questions', questionRoutes);

@@ -1,28 +1,32 @@
-import {prisma} from '../config/lib/prisma'; 
 
-export const createQuestion = async (content: string, sessionId: string, authorName?: string) => {
+import { prisma } from '../config/lib/prisma';
+
+export const createQuestion = async (content: string, sessionId: number | string, authorName?: string) => {
+  const trimmedContent = content.trim();
+  const normalizedSessionId = String(sessionId).trim();
+
   return await prisma.question.create({
     data: {
-      content,
-      sessionId,
-      authorName: authorName || "Anonymous",
+      content: trimmedContent,
+      sessionId: normalizedSessionId,
+      authorName: authorName?.trim() || null,
     },
   });
 };
 
-export const getQuestionsBySession = async (sessionId: string) => {
+export const getQuestionsBySession = async (sessionId: number | string) => {
   return await prisma.question.findMany({
-    where: { sessionId },
-    orderBy: { upvotes: 'desc' }, 
+    where: { sessionId: String(sessionId).trim() },
+    orderBy: [
+      { upvotes: 'desc' },
+      { createdAt: 'asc' },
+    ],
   });
 };
 
-export const upvoteQuestion = async (id: string) => {
+export const upvoteQuestion = async (id: number | string) => {
   return await prisma.question.update({
-    where: { id },
-    data: {
-      upvotes: { increment: 1 },
-    },
+    where: { id: String(id) },
+    data: { upvotes: { increment: 1 } },
   });
 };
-// 
