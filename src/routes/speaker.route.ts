@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../config/lib/prisma";
-import { createSpeaker } from "../controllers/speaker.controller";
+import { deleteSpeaker,createSpeaker, updateSpeaker } from "../controllers/speaker.controller";
 import { adminMiddleware } from "../middlewares/admin.middleware";
 
 const router = Router();
@@ -60,5 +60,8 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", adminMiddleware, createSpeaker);
 
+router.put("/:id", adminMiddleware, updateSpeaker);
+
+router.delete("/:id", adminMiddleware, deleteSpeaker);
 
 export default router;
