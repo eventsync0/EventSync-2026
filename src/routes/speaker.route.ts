@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../config/lib/prisma";
+import { createSpeaker } from "../controllers/speaker.controller";
+import { adminMiddleware } from "../middlewares/admin.middleware";
 
 const router = Router();
 
@@ -62,5 +64,9 @@ router.get("/:id", async (req, res) => {
     });
   }
 });
+
+//methode post pour créer un speaker (protégé par adminMiddleware)
+router.post("/", adminMiddleware, createSpeaker);
+
 
 export default router;

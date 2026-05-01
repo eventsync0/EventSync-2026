@@ -9,8 +9,8 @@ export const getAllSpeakers = async (_req: Request, res: Response) => {
   try {
     const speakers = await prisma.speaker.findMany({
       include: {
-        speakerLinks: true,
-        sessions: true, // optionnel (tu peux enlever si pas encore utile)
+        links: true, // ✅ correspond au schema.prisma
+        sessions: true, // optionnel (OK pour plus tard)
       },
       orderBy: {
         fullName: "asc",
@@ -23,7 +23,7 @@ export const getAllSpeakers = async (_req: Request, res: Response) => {
       data: speakers,
     });
   } catch (error) {
-    console.error(error);
+    console.error("GET ALL SPEAKERS ERROR:", error);
 
     return res.status(500).json({
       success: false,
@@ -43,8 +43,8 @@ export const getSpeakerById = async (req: Request, res: Response) => {
     const speaker = await prisma.speaker.findUnique({
       where: { id },
       include: {
-        speakerLinks: true,
-        sessions: true,  
+        links: true, // ✅ corrigé
+        sessions: true,
       },
     });
 
@@ -60,11 +60,66 @@ export const getSpeakerById = async (req: Request, res: Response) => {
       data: speaker,
     });
   } catch (error) {
-    console.error(error);
+    console.error("GET SPEAKER BY ID ERROR:", error);
 
     return res.status(500).json({
       success: false,
       message: "Erreur serveur lors de la récupération du speaker",
+    });
+  }
+};
+
+/**
+ * POST /api/speakers
+ * Protected - création speaker + links
+ */
+export const createSpeaker = async (req: Request, res: Response) => {
+  try {
+    const { fullName, photoUrl, bio, speakerLinks } = req.body;
+
+    // 1. Validation stricte
+    if (!fullName || fullName.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "fullName est requis",
+      });
+    }
+
+    // 2. Création speaker + relations imbriquées
+    const speaker = await prisma.speaker.create({
+      data: {
+        fullName,
+        photoUrl: photoUrl || null,
+        bio: bio || null,
+
+        // ✅ IMPORTANT : relation correcte selon schema
+        links: speakerLinks?.length
+          ? {
+              create: speakerLinks.map((link: any) => ({
+                platform: link.platform,
+                url: link.url,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        links: true,
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: speaker,
+    });
+  } catch (error) {
+    console.error("CREATE SPEAKER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la création du speaker",
     });
   }
 };
