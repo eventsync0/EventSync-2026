@@ -168,3 +168,42 @@ export const updateSpeaker = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * DELETE /api/speakers/:id
+ * Protected - supprimer speaker + cascade links
+ */
+export const deleteSpeaker = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Vérifier existence
+    const existingSpeaker = await prisma.speaker.findUnique({
+      where: { id },
+    });
+
+    if (!existingSpeaker) {
+      return res.status(404).json({
+        success: false,
+        message: "Speaker introuvable",
+      });
+    }
+
+    // 2. Suppression (cascade automatique pour links)
+    await prisma.speaker.delete({
+      where: { id },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Intervenant supprimé avec succès",
+    });
+  } catch (error) {
+    console.error("DELETE SPEAKER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la suppression du speaker",
+    });
+  }
+};
