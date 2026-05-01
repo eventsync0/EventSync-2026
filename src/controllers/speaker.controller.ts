@@ -6,21 +6,11 @@ import { computeIsLive } from "../utils/isLive";
  * GET /api/speakers
  * Public - liste tous les speakers
  */
-export const getAllSpeakers = async (_req: Request, res: Response) => {
+ export const getAllSpeakers = async (_req: Request, res: Response) => {
   try {
     const speakers = await prisma.speaker.findMany({
       include: {
-        links: true,
-        sessions: {
-          include: {
-            room: true,
-            questions: {
-              orderBy: {
-                upvotes: "desc",
-              },
-            },
-          },
-        },
+        links: true, // ✅ seul ce qui est demandé
       },
       orderBy: {
         fullName: "asc",
