@@ -5,5 +5,6 @@ const router = Router();
 const sessionController = new SessionController();
 
 router.post("/", sessionController.postSession);
+router.put("/:id", sessionController.putSession);
 
 export default router;

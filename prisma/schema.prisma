@@ -56,6 +56,7 @@ model Session {
   updatedAt   DateTime @updatedAt
   event       Event[]
   questions   Question[]
+  speakers    Speaker[] @relation("SessionSpeakers")
 }
 
 
@@ -75,7 +76,7 @@ model Speaker {
   photoUrl  String?
   bio       String?
   links     SpeakerLink[]
-  // sessions  Session[]  @relation("SessionSpeakers")  ← pour l’instant commentée, à réactiver après action de Nomena
+  sessions  Session[]  @relation("SessionSpeakers")
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
