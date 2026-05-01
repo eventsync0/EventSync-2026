@@ -65,6 +65,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+//methode post pour créer un speaker (protégé par adminMiddleware)
 router.post("/", adminMiddleware, createSpeaker);
 
 
