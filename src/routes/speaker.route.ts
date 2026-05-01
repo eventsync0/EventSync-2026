@@ -5,10 +5,6 @@ import { adminMiddleware } from "../middlewares/admin.middleware";
 
 const router = Router();
 
-/**
- * GET /api/speakers
- * Public route - liste tous les speakers avec leurs liens
- */
 router.get("/", async (req, res) => {
   try {
     const speakers = await prisma.speaker.findMany({
@@ -32,10 +28,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-/**
- * GET /api/speakers/:id
- * Public route - speaker par ID avec ses liens
- */
+
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -65,7 +58,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-//methode post pour créer un speaker (protégé par adminMiddleware)
 router.post("/", adminMiddleware, createSpeaker);
 
 
