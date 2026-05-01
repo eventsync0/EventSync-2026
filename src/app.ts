@@ -25,5 +25,7 @@ export const createApp = () => {
     app.use('/api/events', eventRoutes)
     app.use('/api/speakers', speakerRoutes)
 
+    
+
     return app
 }
