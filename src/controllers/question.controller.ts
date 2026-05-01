@@ -21,23 +21,20 @@ export const getBySession = async (
     const questions = await QuestionService.getQuestionsBySession(sessionId);
     res.json({ data: questions });
   } catch (error) {
-    console.error(error);
+    console.error("ERREUR GET_BY_SESSION :", error);
     res.status(500).json({ error: 'Échec de la récupération des questions' });
   }
 };
 
-export const create = async (
-  req: Request<{}, {}, { content: string; sessionId: string; authorName?: string }>,
-  res: Response
-) => {
+export const create = async (req: Request, res: Response) => {
   try {
-    const { sessionId, content, authorName } = req.body;
+    const { sessionId, content } = req.body;
+    const userId = (req as any).userId; 
 
-    if (!content || !content.trim()) {
+    console.log("DEBUG CREATE - UserID:", userId, "SessionID:", sessionId);
+
+    if (!content?.trim()) {
       return res.status(400).json({ error: 'La question ne peut pas être vide' });
-    }
-    if (!sessionId) {
-      return res.status(400).json({ error: 'Le sessionId est requis' });
     }
 
     const session = await prisma.session.findUnique({
@@ -48,37 +45,38 @@ export const create = async (
       return res.status(404).json({ error: 'Session introuvable' });
     }
 
-    if (!computeIsLive(session.startTime, session.endTime)) {
+    const isLive = computeIsLive(session.startTime, session.endTime);
+    console.log("DEBUG IS_LIVE:", isLive);
+
+    if (!isLive) {
       return res.status(403).json({
         error: 'Les questions ne peuvent être posées que pendant une session en cours',
       });
     }
 
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
     const question = await QuestionService.createQuestion(
       content,
       sessionId,
-      authorName
+      user?.name || "Utilisateur"
     );
 
     res.status(201).json({
       data: { ...question, authorName: question.authorName ?? 'Anonyme' },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Échec de la création' });
+    console.error("ERREUR DÉTAILLÉE CRÉATION :", error); 
+    res.status(500).json({ 
+      error: 'Échec de la création',
+      details: error instanceof Error ? error.message : "Erreur inconnue"
+    });
   }
 };
 
-export const upvote = async (
-  req: Request<{ id: string }>,
-  res: Response
-) => {
+export const upvote = async (req: Request<{ id: string }>, res: Response) => {
   try {
-    const id = Number(req.params.id);
-
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'ID invalide' });
-    }
+    const { id } = req.params; 
 
     const existing = await prisma.question.findUnique({ where: { id } });
     if (!existing) {
@@ -91,7 +89,7 @@ export const upvote = async (
       data: { ...updated, authorName: updated.authorName ?? 'Anonyme' },
     });
   } catch (error) {
-    console.error(error);
+    console.error("ERREUR UPVOTE :", error);
     res.status(500).json({ error: "Échec de l'upvote" });
   }
 };

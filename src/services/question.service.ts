@@ -3,15 +3,16 @@ import { prisma } from '../config/lib/prisma';
 export const getQuestionsBySession = async (sessionId: string) => {
   const questions = await prisma.question.findMany({
     where: { sessionId },
-    orderBy: [{ upvotes: 'desc' }, { createdAt: 'asc' }],
+    orderBy: [
+      { upvotes: 'desc' },
+      { createdAt: 'asc' }
+    ],
   });
 
-  return questions.map(
-    (q: Awaited<ReturnType<typeof prisma.question.findMany>>[number]) => ({
-      ...q,
-      authorName: q.authorName ?? 'Anonyme',
-    })
-  );
+  return questions.map((q) => ({
+    ...q,
+    authorName: q.authorName ?? 'Anonyme',
+  }));
 };
 
 export const createQuestion = async (
@@ -28,7 +29,7 @@ export const createQuestion = async (
   });
 };
 
-export const upvoteQuestion = async (id: number) => {
+export const upvoteQuestion = async (id: string) => {
   return await prisma.question.update({
     where: { id },
     data: { upvotes: { increment: 1 } },
