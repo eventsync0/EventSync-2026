@@ -1,5 +1,6 @@
 import { prisma } from '../config/lib/prisma';
 
+
 export const getQuestionsBySession = async (sessionId: string) => {
   const questions = await prisma.question.findMany({
     where: { sessionId },

@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import * as QuestionService from '../services/question.service';
-import { prisma } from '../config/lib/prisma';
 import { computeIsLive } from '../utils/isLive';
-import { AuthRequest } from '../middlewares/admin.middleware';
+import { prisma } from '../config/lib/prisma';
 
 export const getBySession = async (
   req: Request<{ sessionId: string }>,
@@ -26,55 +25,32 @@ export const getBySession = async (
     res.status(500).json({ error: 'Échec de la récupération des questions' });
   }
 };
+export const create = async (req: Request, res: Response) => {
+    try {
+        const { content, sessionId, authorName } = req.body;
 
-export const create = async (req: AuthRequest, res: Response) => {
-  try {
-    const { sessionId, content } = req.body;
-    const userId = req.userId; // Plus besoin de (req as any)
+        const session = await prisma.session.findUnique({
+            where: { id: sessionId }
+        });
 
-    console.log("DEBUG CREATE - UserID:", userId, "SessionID:", sessionId);
+        if (!session) {
+            return res.status(404).json({ error: "Session non trouvée" });
+        }
 
-    if (!content?.trim()) {
-      return res.status(400).json({ error: 'La question ne peut pas être vide' });
+        const now = new Date();
+        if (now > session.endTime) {
+            return res.status(400).json({ error: "Session terminée" });
+        }
+
+        const newQuestion = await QuestionService.createQuestion(content, sessionId, authorName);
+        return res.status(201).json(newQuestion);
+
+    } catch (error: any) {
+        return res.status(500).json({ 
+            error: "Échec de la création", 
+            details: error.message 
+        });
     }
-
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-    });
-
-    if (!session) {
-      return res.status(404).json({ error: 'Session introuvable' });
-    }
-
-    const isLive = computeIsLive(session.startTime, session.endTime);
-    console.log("DEBUG IS_LIVE:", isLive);
-
-    if (!isLive) {
-      return res.status(403).json({
-        error: 'Les questions ne peuvent être posées que pendant une session en cours',
-      });
-    }
-
-    const admin = await prisma.admin.findUnique({ 
-      where: { id: userId } 
-    });
-
-    const question = await QuestionService.createQuestion(
-      content,
-      sessionId,
-      admin?.name || "Utilisateur"
-    );
-
-    res.status(201).json({
-      data: { ...question, authorName: question.authorName ?? 'Anonyme' },
-    });
-  } catch (error) {
-    console.error("ERREUR DÉTAILLÉE CRÉATION :", error); 
-    res.status(500).json({ 
-      error: 'Échec de la création',
-      details: error instanceof Error ? error.message : "Erreur inconnue"
-    });
-  }
 };
 
 export const upvote = async (req: Request<{ id: string }>, res: Response) => {
