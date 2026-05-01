@@ -2,14 +2,15 @@ import { prisma } from "../src/config/lib/prisma";
 import bcrypt from "bcrypt";
 
 async function main() {
-    console.log('🌱 Début du seeding...');
+    console.log("🌱 Début du seeding...");
 
-    // 1. Création du compte admin
+    // 1. Admin
     const existing = await prisma.admin.findUnique({
         where: { email: "admin@eventsync.com" }
     });
 
     let adminUser;
+
     if (existing) {
         console.log("⚠️ Admin already exists");
         adminUser = existing;
@@ -24,27 +25,24 @@ async function main() {
             }
         });
 
-        console.log("✅ Admin user created with email: admin@eventsync.com");
+        console.log("✅ Admin créé");
     }
 
-    // 2. Nettoyage des données existantes
-    console.log("🗑️ Nettoyage des données existantes...");
+    // 2. Clean DB
+    console.log("🗑️ Nettoyage...");
     await prisma.question.deleteMany({});
     await prisma.session.deleteMany({});
     await prisma.event.deleteMany({});
     await prisma.room.deleteMany({});
+    await prisma.speaker.deleteMany({});
     console.log("✅ Nettoyage terminé");
 
-    // 3. Création des salles
-    console.log("\n🏢 Création des salles...");
-
+    // 3. Rooms
     const roomA = await prisma.room.create({ data: { name: "Grand Amphithéâtre" } });
     const roomB = await prisma.room.create({ data: { name: "Salle de Conférence B" } });
     const roomC = await prisma.room.create({ data: { name: "Studio Live" } });
 
-    console.log(`✅ ${roomA.name}, ${roomB.name}, ${roomC.name} créées`);
-
-    // 4. Événement futur
+    // 4. Events
     const now = new Date();
 
     const futureStart = new Date(now);
@@ -57,43 +55,36 @@ async function main() {
     const event1 = await prisma.event.create({
         data: {
             title: "Conférence Tech 2026",
-            description: "Une grande conférence sur les dernières technologies web et mobile.",
+            description: "IA + Web + Mobile",
             startDate: futureStart,
             endDate: futureEnd,
-            location: "Palais des Congrès, Paris"
+            location: "Paris"
         }
     });
 
-    console.log(`✅ Événement futur créé: ${event1.title}`);
-
-    // 5. Événement live
     const todayStart = new Date(now);
-    todayStart.setHours(now.getHours() - 2, 0, 0, 0);
+    todayStart.setHours(now.getHours() - 2);
 
     const todayEnd = new Date(now);
-    todayEnd.setHours(now.getHours() + 3, 0, 0, 0);
+    todayEnd.setHours(now.getHours() + 3);
 
     const event2 = await prisma.event.create({
         data: {
-            title: "Workshop Live : Développement React",
-            description: "Atelier pratique en direct.",
+            title: "Workshop React Live",
+            description: "Session interactive React",
             startDate: todayStart,
             endDate: todayEnd,
-            location: "En ligne (Zoom)"
+            location: "Zoom"
         }
     });
 
-    console.log(`✅ Événement en cours créé: ${event2.title}`);
-
-    // 6. Sessions
-    console.log("\n📅 Création des sessions...");
-
+    // 5. Sessions
     const session1_event1 = await prisma.session.create({
         data: {
-            title: "Keynote: L'avenir de l'AI",
-            description: "IA en 2026",
-            startTime: new Date(futureStart.getTime() + 1 * 60 * 60 * 1000),
-            endTime: new Date(futureStart.getTime() + 2 * 60 * 60 * 1000),
+            title: "Keynote AI",
+            description: "IA 2026",
+            startTime: new Date(futureStart.getTime() + 3600000),
+            endTime: new Date(futureStart.getTime() + 7200000),
             capacity: 200,
             roomId: roomA.id,
             event: { connect: { id: event1.id } }
@@ -102,10 +93,10 @@ async function main() {
 
     const session2_event1 = await prisma.session.create({
         data: {
-            title: "Docker & Kubernetes",
+            title: "Docker Kubernetes",
             description: "Containerisation",
-            startTime: new Date(futureStart.getTime() + 2 * 60 * 60 * 1000),
-            endTime: new Date(futureStart.getTime() + 4 * 60 * 60 * 1000),
+            startTime: new Date(futureStart.getTime() + 7200000),
+            endTime: new Date(futureStart.getTime() + 14400000),
             capacity: 50,
             roomId: roomB.id,
             event: { connect: { id: event1.id } }
@@ -114,10 +105,10 @@ async function main() {
 
     const session1_event2 = await prisma.session.create({
         data: {
-            title: "React 19 Intro",
+            title: "React 19",
             description: "Nouveautés React",
-            startTime: new Date(todayStart.getTime() + 0.5 * 60 * 60 * 1000),
-            endTime: new Date(todayStart.getTime() + 2 * 60 * 60 * 1000),
+            startTime: new Date(todayStart.getTime() + 1800000),
+            endTime: new Date(todayStart.getTime() + 7200000),
             capacity: 100,
             roomId: roomC.id,
             event: { connect: { id: event2.id } }
@@ -126,31 +117,29 @@ async function main() {
 
     const session2_event2 = await prisma.session.create({
         data: {
-            title: "Live Coding React Hooks",
-            description: "Session interactive",
-            startTime: new Date(todayStart.getTime() + 2 * 60 * 60 * 1000),
-            endTime: new Date(todayStart.getTime() + 3.5 * 60 * 60 * 1000),
+            title: "React Hooks Live",
+            description: "Coding session",
+            startTime: new Date(todayStart.getTime() + 7200000),
+            endTime: new Date(todayStart.getTime() + 12600000),
             capacity: 80,
             roomId: roomC.id,
             event: { connect: { id: event2.id } }
         }
     });
 
-    console.log(`✅ ${await prisma.session.count()} sessions créées`);
+    console.log("✅ Sessions créées");
 
-    // 7. Questions
-    console.log("\n💬 Création des questions...");
-
+    // 6. Questions
     await prisma.question.createMany({
         data: [
             {
-                content: "Quelles sont les prérequis ?",
+                content: "Prérequis ?",
                 authorName: "Marie Dupont",
                 upvotes: 12,
                 sessionId: session1_event2.id
             },
             {
-                content: "React 19 compatible ?",
+                content: "React 19 stable ?",
                 authorName: "Thomas Martin",
                 upvotes: 8,
                 sessionId: session1_event2.id
@@ -158,75 +147,132 @@ async function main() {
         ]
     });
 
-    const totalQuestions = await prisma.question.count();
-    console.log(`✅ ${totalQuestions} questions créées`);
+    // 7. SPEAKERS
+    console.log("\n🎤 Création speakers...");
 
-    // 8. SPEAKERS (PROPRE VERSION SANS RELATION SESSION)
-    console.log("\n🎤 Création des speakers...");
+    const alice = await prisma.speaker.create({
+        data: {
+            fullName: "Alice Johnson",
+            photoUrl: "https://i.pravatar.cc/150?img=1",
+            bio: "AI Expert",
+            links: {
+                create: [{ platform: "linkedin", url: "https://linkedin.com" }]
+            }
+        }
+    });
 
-    const speakersData = [
-    {
-        fullName: "Alice Johnson",
-        photoUrl: "https://i.pravatar.cc/150?img=1",
-        bio: "Experte en IA et Machine Learning.",
-        links: { create: [{ platform: "linkedin", url: "https://linkedin.com" }] }
-    },
-    {
-        fullName: "David Kim",
-        photoUrl: "https://i.pravatar.cc/150?img=2",
-        bio: "Full Stack Developer React/Node.js.",
-        links: { create: [{ platform: "github", url: "https://github.com" }] }
-    },
-    {
-        fullName: "Sarah Lopez",
-        photoUrl: "https://i.pravatar.cc/150?img=3",
-        bio: "DevOps Engineer Docker & Kubernetes.",
-        links: { create: [{ platform: "twitter", url: "https://twitter.com" }] }
-    },
-    {
-        fullName: "Michael Brown",
-        photoUrl: "https://i.pravatar.cc/150?img=4",
-        bio: "Architecte logiciel microservices.",
-        links: { create: [{ platform: "website", url: "https://site.com" }] }
+    const david = await prisma.speaker.create({
+        data: {
+            fullName: "David Kim",
+            photoUrl: "https://i.pravatar.cc/150?img=2",
+            bio: "Fullstack Dev",
+            links: {
+                create: [{ platform: "github", url: "https://github.com" }]
+            }
+        }
+    });
+
+    const sarah = await prisma.speaker.create({
+        data: {
+            fullName: "Sarah Lopez",
+            photoUrl: "https://i.pravatar.cc/150?img=3",
+            bio: "DevOps",
+            links: {
+                create: [{ platform: "twitter", url: "https://twitter.com" }]
+            }
+        }
+    });
+
+    const michael = await prisma.speaker.create({
+        data: {
+            fullName: "Michael Brown",
+            photoUrl: "https://i.pravatar.cc/150?img=4",
+            bio: "Architecte logiciel",
+            links: {
+                create: [{ platform: "website", url: "https://site.com" }]
+            }
+        }
+    });
+
+    console.log("✅ Speakers créés");
+
+    // 8. LIAISON SPEAKERS ↔ SESSIONS
+    console.log("\n🔗 Liaison speakers ↔ sessions...");
+
+    await prisma.session.update({
+        where: { id: session1_event1.id },
+        data: {
+            speakers: { connect: [{ id: alice.id }, { id: david.id }] }
+        }
+    });
+
+    await prisma.session.update({
+        where: { id: session2_event1.id },
+        data: {
+            speakers: { connect: [{ id: sarah.id }] }
+        }
+    });
+
+    await prisma.session.update({
+        where: { id: session1_event2.id },
+        data: {
+            speakers: { connect: [{ id: david.id }, { id: michael.id }] }
+        }
+    });
+
+    await prisma.session.update({
+        where: { id: session2_event2.id },
+        data: {
+            speakers: {
+                connect: [
+                    { id: alice.id },
+                    { id: sarah.id },
+                    { id: michael.id }
+                ]
+            }
+        }
+    });
+
+    console.log("✅ Relations speakers ↔ sessions OK");
+
+    // 9. Vérification obligatoire
+    const check = await prisma.session.findMany({
+        include: { speakers: true }
+    });
+
+    const invalid = check.filter(s => s.speakers.length === 0);
+
+    if (invalid.length > 0) {
+        console.log("❌ Sessions sans speakers :", invalid);
+    } else {
+        console.log("✅ Toutes les sessions ont au moins 1 speaker");
     }
-];
-    for (const speaker of speakersData) {
-        await prisma.speaker.create({ data: speaker });
-    }
 
-    const totalSpeakers = await prisma.speaker.count();
-    console.log(`🎤 Speakers créés: ${totalSpeakers}`);
-
-    // 9. Refresh token
+    // 10. Refresh token
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     await prisma.refreshToken.create({
         data: {
-            token: "seed-refresh-token-demo-" + Date.now(),
+            token: "seed-refresh-" + Date.now(),
             adminId: adminUser.id,
             expiresAt
         }
     });
 
-    console.log("✅ Refresh token créé");
-
-    // 10. Résumé final
-    console.log("\n================================");
-    console.log("🎉 SEEDING TERMINÉ !");
-    console.log("================================");
-
+    // 11. Résumé
+    console.log("\n🎉 SEED TERMINÉ !");
     console.log(`👤 Admin: ${adminUser.email}`);
-    console.log(`🏢 Rooms: ${(await prisma.room.count())}`);
-    console.log(`📅 Events: ${(await prisma.event.count())}`);
-    console.log(`📅 Sessions: ${(await prisma.session.count())}`);
-    console.log(`💬 Questions: ${totalQuestions}`);
-    console.log(`🎤 Speakers: ${totalSpeakers}`);
+    console.log(`🏢 Rooms: ${await prisma.room.count()}`);
+    console.log(`📅 Events: ${await prisma.event.count()}`);
+    console.log(`📅 Sessions: ${await prisma.session.count()}`);
+    console.log(`💬 Questions: ${await prisma.question.count()}`);
+    console.log(`🎤 Speakers: ${await prisma.speaker.count()}`);
 }
 
 main()
-    .catch((error) => {
-        console.error("❌ Erreur:", error);
+    .catch((e) => {
+        console.error("❌ ERROR:", e);
         process.exit(1);
     })
     .finally(async () => {
