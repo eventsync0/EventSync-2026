@@ -68,3 +68,54 @@ export const getSpeakerById = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+/**
+ * POST /api/speakers
+ * Protected - création speaker + links
+ */
+export const createSpeaker = async (req: Request, res: Response) => {
+  try {
+    const { fullName, photoUrl, bio, speakerLinks } = req.body;
+
+    // 1. Validation simple
+    if (!fullName || fullName.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "fullName est requis",
+      });
+    }
+
+    // 2. Création speaker + liens
+    const speaker = await prisma.speaker.create({
+      data: {
+        fullName,
+        photoUrl,
+        bio,
+        speakerLinks: speakerLinks
+          ? {
+              create: speakerLinks.map((link: any) => ({
+                platform: link.platform,
+                url: link.url,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        speakerLinks: true,
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: speaker,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la création du speaker",
+    });
+  }
+};
