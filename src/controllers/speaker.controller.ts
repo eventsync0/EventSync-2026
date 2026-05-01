@@ -31,7 +31,7 @@ export const getAllSpeakers = async (_req: Request, res: Response) => {
 
 export const getSpeakerById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const speaker = await prisma.speaker.findUnique({
       where: { id },
