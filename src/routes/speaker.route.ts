@@ -9,11 +9,11 @@ const router = Router();
  * GET /api/speakers
  * Public route - liste tous les speakers avec leurs liens
  */
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   try {
     const speakers = await prisma.speaker.findMany({
       include: {
-        speakerLinks: true,
+        links: true,
       },
       orderBy: {
         fullName: "asc",
@@ -43,7 +43,7 @@ router.get("/:id", async (req, res) => {
     const speaker = await prisma.speaker.findUnique({
       where: { id },
       include: {
-        speakerLinks: true,
+        links: true,
       },
     });
 
@@ -65,10 +65,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/**
- * POST /api/speakers
- * Protected
- */
 router.post("/", adminMiddleware, createSpeaker);
+
 
 export default router;
