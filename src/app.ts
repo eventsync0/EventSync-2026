@@ -6,6 +6,8 @@ import authRoutes from './routes/auth.route'
 import roomRoutes from './routes/rooms.route'
 import sessionRoutes from './routes/session.route'
 
+    import questionRouter from './routes/question.routes';
+
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
 
 export const createApp = () => {
@@ -22,5 +24,7 @@ export const createApp = () => {
     app.use('/api/rooms', roomRoutes)
     app.use('/api/sessions', sessionRoutes)
 
+
+    app.use('/api', questionRouter);
     return app
 }
