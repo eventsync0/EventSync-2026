@@ -109,7 +109,7 @@ export const createSpeaker = async (req: Request, res: Response) => {
     });
   }
 };
-
+//put methode put /api/speakers/:id
 export const updateSpeaker = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

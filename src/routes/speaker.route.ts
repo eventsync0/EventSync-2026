@@ -60,5 +60,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", adminMiddleware, createSpeaker);
 
+router.put("/:id", adminMiddleware, updateSpeaker);
+
 
 export default router;
