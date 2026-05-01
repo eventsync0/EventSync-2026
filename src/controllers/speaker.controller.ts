@@ -1,12 +1,26 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/lib/prisma";
+import { computeIsLive } from "../utils/isLive";
 
+/**
+ * GET /api/speakers
+ * Public - liste tous les speakers
+ */
 export const getAllSpeakers = async (_req: Request, res: Response) => {
   try {
     const speakers = await prisma.speaker.findMany({
       include: {
-        links: true, 
-        sessions: true, 
+        links: true,
+        sessions: {
+          include: {
+            room: true,
+            questions: {
+              orderBy: {
+                upvotes: "desc",
+              },
+            },
+          },
+        },
       },
       orderBy: {
         fullName: "asc",
@@ -28,16 +42,28 @@ export const getAllSpeakers = async (_req: Request, res: Response) => {
   }
 };
 
-
+/**
+ * GET /api/speakers/:id
+ * Public - speaker enrichi (sessions + room + questions + isLive)
+ */
 export const getSpeakerById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params as { id: string };
+    const { id } = req.params;
 
     const speaker = await prisma.speaker.findUnique({
       where: { id },
       include: {
-        links: true, // ✅ corrigé
-        sessions: true,
+        links: true,
+        sessions: {
+          include: {
+            room: true,
+            questions: {
+              orderBy: {
+                upvotes: "desc",
+              },
+            },
+          },
+        },
       },
     });
 
@@ -48,9 +74,27 @@ export const getSpeakerById = async (req: Request, res: Response) => {
       });
     }
 
+    // 🔥 transformation enrichie
+    const enrichedSessions = speaker.sessions.map((session) => ({
+      ...session,
+
+      isLive: computeIsLive(
+        new Date(session.startTime),
+        new Date(session.endTime)
+      ),
+
+      questions: session.questions.map((q) => ({
+        ...q,
+        authorName: q.authorName ?? "Anonyme",
+      })),
+    }));
+
     return res.status(200).json({
       success: true,
-      data: speaker,
+      data: {
+        ...speaker,
+        sessions: enrichedSessions,
+      },
     });
   } catch (error) {
     console.error("GET SPEAKER BY ID ERROR:", error);
@@ -62,7 +106,10 @@ export const getSpeakerById = async (req: Request, res: Response) => {
   }
 };
 
-
+/**
+ * POST /api/speakers
+ * Protected - création speaker + links
+ */
 export const createSpeaker = async (req: Request, res: Response) => {
   try {
     const { fullName, photoUrl, bio, speakerLinks } = req.body;
@@ -109,13 +156,16 @@ export const createSpeaker = async (req: Request, res: Response) => {
     });
   }
 };
-//put methode put /api/speakers/:id
+
+/**
+ * PUT /api/speakers/:id
+ * Protected - update + reset links
+ */
 export const updateSpeaker = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { fullName, photoUrl, bio, links } = req.body;
 
-    // 1. Vérifier existence speaker
     const existingSpeaker = await prisma.speaker.findUnique({
       where: { id },
     });
@@ -127,21 +177,17 @@ export const updateSpeaker = async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Supprimer anciens liens
+    // supprimer anciens liens
     await prisma.speakerLink.deleteMany({
-      where: {
-        speakerId: id,
-      },
+      where: { speakerId: id },
     });
 
-    // 3. Update speaker + recréer links
     const speaker = await prisma.speaker.update({
       where: { id },
       data: {
         fullName,
         photoUrl,
         bio,
-
         links: links?.length
           ? {
               create: links.map((link: any) => ({
@@ -156,7 +202,8 @@ export const updateSpeaker = async (req: Request, res: Response) => {
       },
     });
 
-    return res.json({
+    return res.status(200).json({
+      success: true,
       data: speaker,
     });
   } catch (error) {
@@ -171,13 +218,12 @@ export const updateSpeaker = async (req: Request, res: Response) => {
 
 /**
  * DELETE /api/speakers/:id
- * Protected - supprimer speaker + cascade links
+ * Protected - delete speaker (cascade links)
  */
 export const deleteSpeaker = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // 1. Vérifier existence
     const existingSpeaker = await prisma.speaker.findUnique({
       where: { id },
     });
@@ -189,7 +235,6 @@ export const deleteSpeaker = async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Suppression (cascade automatique pour links)
     await prisma.speaker.delete({
       where: { id },
     });
