@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../config/lib/prisma";
+import { createSpeaker } from "../controllers/speaker.controller";
+import { adminMiddleware } from "../middlewares/admin.middleware";
 
 const router = Router();
 
@@ -7,11 +9,11 @@ const router = Router();
  * GET /api/speakers
  * Public route - liste tous les speakers avec leurs liens
  */
-router.get("/", async (req, res) => {
+router.get("/", async (_req, res) => {
   try {
     const speakers = await prisma.speaker.findMany({
       include: {
-        links: true,
+        speakerLinks: true,
       },
       orderBy: {
         fullName: "asc",
@@ -41,7 +43,7 @@ router.get("/:id", async (req, res) => {
     const speaker = await prisma.speaker.findUnique({
       where: { id },
       include: {
-        links: true,
+        speakerLinks: true,
       },
     });
 
@@ -62,5 +64,11 @@ router.get("/:id", async (req, res) => {
     });
   }
 });
+
+/**
+ * POST /api/speakers
+ * Protected
+ */
+router.post("/", adminMiddleware, createSpeaker);
 
 export default router;
