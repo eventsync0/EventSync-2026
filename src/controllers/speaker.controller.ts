@@ -10,6 +10,7 @@ export const getAllSpeakers = async (_req: Request, res: Response) => {
     const speakers = await prisma.speaker.findMany({
       include: {
         speakerLinks: true,
+        sessions: true, // optionnel (tu peux enlever si pas encore utile)
       },
       orderBy: {
         fullName: "asc",
@@ -43,6 +44,7 @@ export const getSpeakerById = async (req: Request, res: Response) => {
       where: { id },
       include: {
         speakerLinks: true,
+        sessions: true,  
       },
     });
 
