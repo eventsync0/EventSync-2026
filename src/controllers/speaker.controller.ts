@@ -109,3 +109,62 @@ export const createSpeaker = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const updateSpeaker = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { fullName, photoUrl, bio, links } = req.body;
+
+    // 1. Vérifier existence speaker
+    const existingSpeaker = await prisma.speaker.findUnique({
+      where: { id },
+    });
+
+    if (!existingSpeaker) {
+      return res.status(404).json({
+        success: false,
+        message: "Speaker introuvable",
+      });
+    }
+
+    // 2. Supprimer anciens liens
+    await prisma.speakerLink.deleteMany({
+      where: {
+        speakerId: id,
+      },
+    });
+
+    // 3. Update speaker + recréer links
+    const speaker = await prisma.speaker.update({
+      where: { id },
+      data: {
+        fullName,
+        photoUrl,
+        bio,
+
+        links: links?.length
+          ? {
+              create: links.map((link: any) => ({
+                platform: link.platform,
+                url: link.url,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        links: true,
+      },
+    });
+
+    return res.json({
+      data: speaker,
+    });
+  } catch (error) {
+    console.error("UPDATE SPEAKER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la mise à jour du speaker",
+    });
+  }
+};
