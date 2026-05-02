@@ -2,15 +2,12 @@ import { Request, Response } from "express";
 import { prisma } from "../config/lib/prisma";
 import { computeIsLive } from "../utils/isLive";
 
-/**
- * GET /api/speakers
- * Public - liste tous les speakers
- */
+
  export const getAllSpeakers = async (_req: Request, res: Response) => {
   try {
     const speakers = await prisma.speaker.findMany({
       include: {
-        links: true, // ✅ seul ce qui est demandé
+        links: true, 
       },
       orderBy: {
         fullName: "asc",
@@ -32,10 +29,7 @@ import { computeIsLive } from "../utils/isLive";
   }
 };
 
-/**
- * GET /api/speakers/:id
- * Public - speaker enrichi (sessions + room + questions + isLive)
- */
+
 export const getSpeakerById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -64,7 +58,6 @@ export const getSpeakerById = async (req: Request, res: Response) => {
       });
     }
 
-    // 🔥 transformation enrichie
     const enrichedSessions = speaker.sessions.map((session) => ({
       ...session,
 
@@ -96,10 +89,7 @@ export const getSpeakerById = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * POST /api/speakers
- * Protected - création speaker + links
- */
+
 export const createSpeaker = async (req: Request, res: Response) => {
   try {
     const { fullName, photoUrl, bio, speakerLinks } = req.body;
@@ -147,10 +137,6 @@ export const createSpeaker = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * PUT /api/speakers/:id
- * Protected - update + reset links
- */
 export const updateSpeaker = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -206,10 +192,6 @@ export const updateSpeaker = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * DELETE /api/speakers/:id
- * Protected - delete speaker (cascade links)
- */
 export const deleteSpeaker = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
