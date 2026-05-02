@@ -6,6 +6,8 @@ import adminRoutes from './routes/admin.route'
 import roomRoutes from './routes/rooms.route'
 import sessionRoutes from './routes/session.route'
 import eventRoutes from './routes/event.route'
+import speakerRoutes from './routes/speaker.route'
+import questionRoutes from './routes/questions.routes'
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
 
@@ -18,11 +20,12 @@ export const createApp = () => {
     app.get('/api/health', (req, res) => {
         res.json({ status: 'API is running' })
     })
+    app.use('/api', questionRoutes)
 
     app.use('/admin', adminRoutes)
     app.use('/api/rooms', roomRoutes)
     app.use('/api/sessions', sessionRoutes)
     app.use('/api/events', eventRoutes)
-
+    app.use('/api/speakers', speakerRoutes)
     return app
 }

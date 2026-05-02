@@ -56,15 +56,37 @@ model Session {
   updatedAt   DateTime @updatedAt
   event       Event[]
   questions   Question[]
+  speakers    Speaker[] @relation("SessionSpeakers")
 }
-
 
 model Question {
-  id          String   @id @default(uuid())
-  content     String
-  authorName  String?
-  upvotes     Int      @default(0)
-  createdAt   DateTime @default(now())
-  sessionId   String
-  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  content    String
+  authorName String?
+  upvotes    Int      @default(0)
+  createdAt  DateTime @default(now())
+  
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
+
+model Speaker {
+  id        String        @id @default(uuid())
+  fullName  String
+  photoUrl  String?
+  bio       String?
+  links     SpeakerLink[]
+  sessions  Session[]  @relation("SessionSpeakers")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model SpeakerLink {
+  id        String   @id @default(uuid())
+  speakerId String
+  platform  String   // ex: 'twitter', 'linkedin', 'website', 'github'
+  url       String
+  speaker   Speaker  @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+}
+
+
