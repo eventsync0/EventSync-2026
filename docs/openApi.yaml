@@ -238,26 +238,7 @@ paths:
       responses:
         '201': { description: Événement créé }
 
-  /api/sessions:
-    post:
-      summary: Créer une session
-      tags: [Admin]
-      security: [ { BearerAuth: [] } ]
-      responses:
-        '201': { description: Session créée }
-
-  /api/sessions/{id}:
-    put:
-      summary: Modifier une session
-      tags: [Admin]
-      security: [ { BearerAuth: [] } ]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '200': { description: Session mise à jour }
+ 
 
   /api/speakers:
     post:
