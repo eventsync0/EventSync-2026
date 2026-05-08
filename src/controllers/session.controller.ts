@@ -7,6 +7,23 @@ export class SessionController {
         this.sessionService = new SessionService();
     }
 
+    getSessionById = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const  id  = req.params.id as string;
+            const session = await this.sessionService.getSessionById(id);
+
+            if (!session) {
+                res.status(404).json({ error: "Session non trouvée" });
+                return;
+            }
+
+            res.status(200).json({ data: session });
+        } catch (error) {
+            console.error("GET SESSION BY ID ERROR:", error);
+            res.status(500).json({ error: "Erreur serveur" });
+        }
+    };
+    
      postSession = async (req: Request, res: Response): Promise<void> => {
         try {
             const { roomId, title, description, startTime, endTime, capacity, speakerIds } = req.body;
