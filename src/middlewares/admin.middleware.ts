@@ -37,7 +37,6 @@ export const authMiddleware = async (
                 id: true,
                 email: true,
                 name: true,
-              // Assurez-vous d'avoir un champ 'role' dans votre modèle Admin
             }
         });
 
@@ -61,7 +60,6 @@ export const authMiddleware = async (
     }
 };
 
-// Middleware spécifique pour vérifier si l'utilisateur est admin
 export const adminMiddleware = async (
     req: AuthRequest,
     res: Response,
@@ -72,7 +70,6 @@ export const adminMiddleware = async (
             return res.status(401).json({ error: "User not authenticated" });
         }
 
-        // Vérifier si l'utilisateur est admin
         const isAdmin = req.user.email === "admin@eventsync.com" || req.user.role === "admin";
         
         if (!isAdmin) {
