@@ -154,7 +154,7 @@ export class SpeakerController {
                 });
             }
 
-            // supprimer anciens liens
+    
             await prisma.speakerLink.deleteMany({
                 where: { speakerId: id } as {speakerId :string},
             });

@@ -5,7 +5,9 @@ import { authMiddleware } from "../middlewares/admin.middleware";
 const router = Router();
 const sessionController = new SessionController();
 
-router.post("/", authMiddleware, sessionController.postSession);
-router.put("/:id",authMiddleware, sessionController.putSession);
-
+router.get("/", sessionController.getSessions);
+router.get("/:id", sessionController.getSession);
+router.post("/", sessionController.postSession);
+router.put("/:id", sessionController.updateSession);
+router.delete("/:id", sessionController.deleteSession);
 export default router;
