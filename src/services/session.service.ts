@@ -1,6 +1,33 @@
 import { prisma } from "../config/lib/prisma";
-
+import {computeIsLive} from "../utils/isLive"
 export class SessionService {
+
+    async getSessionById(id: string) {
+        const session = await prisma.session.findUnique({
+            where: { id },
+            include: {
+                room: true,
+                event: true,
+                speakers: {
+                    include: { links: true }
+                },
+                questions: {
+                    orderBy: { upvotes: 'desc' }
+                }
+            }
+        });
+
+        if (!session) return null;
+
+        return {
+            ...session,
+            isLive: computeIsLive(session.startTime, session.endTime),
+            questions: session.questions.map(q => ({
+                ...q,
+                authorName: q.authorName ?? "Anonyme"
+            }))
+        };
+    }
     async postSession(
         roomId: string,
         title: string,

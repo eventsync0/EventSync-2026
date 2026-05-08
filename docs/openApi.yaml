@@ -1,0 +1,292 @@
+openapi: 3.0.0
+info:
+  title: EventSync-2026 API
+  version: 1.0.0
+  description: API de gestion d'événements avec questions en temps réel
+  contact:
+    name: Christian RAVELOJAONA
+servers:
+  - url: http://localhost:3001
+    description: Serveur de développement
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        message: { type: string }
+
+    AdminLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, example: "admin@eventsync.com" }
+        password: { type: string, example: "adminpassword123" }
+
+    TokenResponse:
+      type: object
+      properties:
+        message: { type: string }
+        accessToken: { type: string }
+        refreshToken: { type: string }
+
+    Event:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        location: { type: string }
+
+    Session:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        startTime: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        capacity: { type: integer }
+        isLive: { type: boolean }
+        room: { $ref: '#/components/schemas/Room' }
+        speakers: { type: array, items: { $ref: '#/components/schemas/Speaker' } }
+        questions: { type: array, items: { $ref: '#/components/schemas/Question' } }
+
+    Speaker:
+      type: object
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+        photoUrl: { type: string, nullable: true }
+        bio: { type: string, nullable: true }
+        links: { type: array, items: { $ref: '#/components/schemas/SpeakerLink' } }
+
+    SpeakerLink:
+      type: object
+      properties:
+        platform: { type: string }
+        url: { type: string }
+
+    Question:
+      type: object
+      properties:
+        id: { type: string }
+        content: { type: string }
+        authorName: { type: string, nullable: true }
+        upvotes: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Room:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+
+paths:
+  # ===================== AUTH =====================
+  /api/admin/login:
+    post:
+      summary: Connexion Administrateur
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminLogin' }
+      responses:
+        '200': { description: Connexion réussie }
+        '401': { description: Identifiants invalides }
+
+  /api/admin/me:
+    get:
+      summary: Profil admin connecté
+      tags: [Auth]
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '200': { description: Succès }
+        '401': { description: Non authentifié }
+
+  /api/admin/refresh:
+    post:
+      summary: Rafraîchir le token
+      tags: [Auth]
+      responses:
+        '200': { description: Token rafraîchi }
+
+  /api/admin/logout:
+    post:
+      summary: Déconnexion
+      tags: [Auth]
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '200': { description: Déconnexion réussie }
+
+  # ===================== PUBLIC =====================
+  /api/events:
+    get:
+      summary: Lister tous les événements
+      tags: [Public]
+      responses:
+        '200': { description: Liste des événements }
+
+  /api/events/{id}:
+    get:
+      summary: Détail d'un événement
+      tags: [Public]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Détail événement }
+        '404': { description: Non trouvé }
+
+  /api/speakers:
+    get:
+      summary: Lister tous les intervenants
+      tags: [Public]
+      responses:
+        '200': { description: Liste des speakers }
+
+  /api/speakers/{id}:
+    get:
+      summary: Détail d'un intervenant + sessions
+      tags: [Public]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Détail speaker }
+        '404': { description: Non trouvé }
+
+  /api/sessions/{id}:
+    get:
+      summary: Détail complet d'une session
+      tags: [Public]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Détail session }
+        '404': { description: Non trouvé }
+
+  # ===================== QUESTIONS =====================
+  /api/questions:
+    post:
+      summary: Poser une question (live seulement)
+      tags: [Questions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, sessionId]
+              properties:
+                content: { type: string }
+                sessionId: { type: string }
+                authorName: { type: string }
+      responses:
+        '201': { description: Question créée }
+        '400': { description: Session non live }
+
+  /api/questions/sessions/{sessionId}/questions:
+    get:
+      summary: Questions d'une session
+      tags: [Questions]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Liste des questions }
+
+  /api/questions/{id}/upvote:
+    post:
+      summary: Upvoter une question
+      tags: [Questions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Upvote réussi }
+        '400': { description: Session non live }
+
+  # ===================== ADMIN =====================
+  /api/admin/event:
+    post:
+      summary: Créer un événement
+      tags: [Admin]
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '201': { description: Événement créé }
+
+  /api/sessions:
+    post:
+      summary: Créer une session
+      tags: [Admin]
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '201': { description: Session créée }
+
+  /api/sessions/{id}:
+    put:
+      summary: Modifier une session
+      tags: [Admin]
+      security: [ { BearerAuth: [] } ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Session mise à jour }
+
+  /api/speakers:
+    post:
+      summary: Créer un intervenant
+      tags: [Admin]
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '201': { description: Intervenant créé }
+
+  /api/speakers/{id}:
+    put:
+      summary: Modifier un intervenant
+      tags: [Admin]
+      security: [ { BearerAuth: [] } ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Intervenant mis à jour }
+    delete:
+      summary: Supprimer un intervenant
+      tags: [Admin]
+      security: [ { BearerAuth: [] } ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Intervenant supprimé }
