@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-// 👇 import ESM compatible du client généré
 import { PrismaClient } from "../generated/prisma/client";
 
 const adapter = new PrismaPg({
