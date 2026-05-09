@@ -1,0 +1,887 @@
+{
+  "info": {
+    "name": "EventSync-2026 — Collection Complète",
+    "description": "Collection complète pour tester le backend EventSync. Les tokens et IDs sont sauvegardés automatiquement via les scripts de test.",
+    "_postman_id": "eventsync-2026-full",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",     "value": "http://localhost:3001", "type": "string" },
+    { "key": "accessToken",  "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "eventId",      "value": "", "type": "string" },
+    { "key": "sessionId",    "value": "", "type": "string" },
+    { "key": "speakerId",    "value": "", "type": "string" },
+    { "key": "roomId",       "value": "", "type": "string" },
+    { "key": "questionId",   "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 Auth — Admin",
+      "item": [
+        {
+          "name": "Login ✅",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@eventsync.com\",\n  \"password\": \"adminpassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/login", "host": ["{{base_url}}"], "path": ["admin","login"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"accessToken présent\", () => pm.expect(json.accessToken).to.be.a('string'));",
+              "pm.collectionVariables.set('accessToken', json.accessToken);",
+              "pm.collectionVariables.set('refreshToken', json.refreshToken);",
+              "console.log('✅ Tokens sauvegardés');"
+            ]}
+          }]
+        },
+        {
+          "name": "Login — mauvais mot de passe ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@eventsync.com\",\n  \"password\": \"mauvaismdp\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/login", "host": ["{{base_url}}"], "path": ["admin","login"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+            ]}
+          }]
+        },
+        {
+          "name": "Me (profil connecté) ✅",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{base_url}}/admin/me", "host": ["{{base_url}}"], "path": ["admin","me"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"email présent\", () => pm.expect(pm.response.json().email).to.be.a('string'));"
+            ]}
+          }]
+        },
+        {
+          "name": "Me — sans token ❌",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/admin/me", "host": ["{{base_url}}"], "path": ["admin","me"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+            ]}
+          }]
+        },
+        {
+          "name": "Refresh Token ✅",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/refresh", "host": ["{{base_url}}"], "path": ["admin","refresh"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "if (json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);"
+            ]}
+          }]
+        },
+        {
+          "name": "Logout ✅",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/logout", "host": ["{{base_url}}"], "path": ["admin","logout"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200 ou 204\", () => pm.expect(pm.response.code).to.be.oneOf([200,204]));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "🏢 Rooms",
+      "item": [
+        {
+          "name": "GET toutes les rooms ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/rooms", "host": ["{{base_url}}"], "path": ["api","rooms"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "if (json.data.length > 0) {",
+              "  pm.collectionVariables.set('roomId', json.data[0].id);",
+              "  console.log('✅ roomId sauvegardé:', json.data[0].id);",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "GET sessions d'une room ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/rooms/{{roomId}}/sessions", "host": ["{{base_url}}"], "path": ["api","rooms","{{roomId}}","sessions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"data est un tableau\", () => pm.expect(pm.response.json().data).to.be.an('array'));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer une room ✅",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Salle Test Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/rooms", "host": ["{{base_url}}"], "path": ["api","rooms"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('roomId', json.room.id);",
+              "console.log('✅ roomId sauvegardé:', json.room.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer room — sans name ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/rooms", "host": ["{{base_url}}"], "path": ["api","rooms"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "DELETE room ✅",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{base_url}}/api/rooms/{{roomId}}", "host": ["{{base_url}}"], "path": ["api","rooms","{{roomId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "📅 Events",
+      "item": [
+        {
+          "name": "GET tous les events ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"réponse est un tableau\", () => pm.expect(json).to.be.an('array'));",
+              "if (json.length > 0) {",
+              "  pm.collectionVariables.set('eventId', json[0].id);",
+              "  console.log('✅ eventId sauvegardé:', json[0].id);",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "GET event par ID ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events/{{eventId}}", "host": ["{{base_url}}"], "path": ["api","events","{{eventId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"title présent\", () => pm.expect(json.title).to.be.a('string'));",
+              "pm.test(\"sessions présentes\", () => pm.expect(json.sessions).to.be.an('array'));"
+            ]}
+          }]
+        },
+        {
+          "name": "GET event — ID inexistant ❌",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events/id-qui-nexiste-pas", "host": ["{{base_url}}"], "path": ["api","events","id-qui-nexiste-pas"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer un event ✅",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DevSummit 2026\",\n  \"description\": \"Conférence annuelle des développeurs\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Lyon\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('eventId', json.id);",
+              "console.log('✅ eventId sauvegardé:', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer event — champ manquant ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Event sans dates\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer event — sans token ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Event non autorisé\",\n  \"description\": \"Test\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Paris\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+            ]}
+          }]
+        },
+        {
+          "name": "PUT mettre à jour un event ✅",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DevSummit 2026 — Édition Mise à Jour\",\n  \"description\": \"Conférence mise à jour\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Lyon — Palais des Congrès\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/events/{{eventId}}", "host": ["{{base_url}}"], "path": ["api","events","{{eventId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+            ]}
+          }]
+        },
+        {
+          "name": "DELETE event ✅",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{base_url}}/api/events/{{eventId}}", "host": ["{{base_url}}"], "path": ["api","events","{{eventId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "🎤 Speakers",
+      "item": [
+        {
+          "name": "GET tous les speakers ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/speakers", "host": ["{{base_url}}"], "path": ["api","speakers"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "if (json.data.length > 0) {",
+              "  pm.collectionVariables.set('speakerId', json.data[0].id);",
+              "  console.log('✅ speakerId sauvegardé:', json.data[0].id);",
+              "}"
+            ]}
+          }]
+        },
+        {
+          "name": "GET speaker par ID ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/speakers/{{speakerId}}", "host": ["{{base_url}}"], "path": ["api","speakers","{{speakerId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"fullName présent\", () => pm.expect(json.data.fullName).to.be.a('string'));",
+              "pm.test(\"sessions présentes\", () => pm.expect(json.data.sessions).to.be.an('array'));",
+              "pm.test(\"isLive calculé\", () => json.data.sessions.forEach(s => pm.expect(s.isLive).to.be.a('boolean')));"
+            ]}
+          }]
+        },
+        {
+          "name": "GET speaker — ID inexistant ❌",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/speakers/id-inexistant", "host": ["{{base_url}}"], "path": ["api","speakers","id-inexistant"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer speaker ✅",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jean-Pierre Martin\",\n  \"photoUrl\": \"https://i.pravatar.cc/150?img=10\",\n  \"bio\": \"Expert en architecture logicielle et cloud\",\n  \"speakerLinks\": [\n    { \"platform\": \"linkedin\", \"url\": \"https://linkedin.com/in/jpmartin\" },\n    { \"platform\": \"github\",   \"url\": \"https://github.com/jpmartin\" }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/speakers", "host": ["{{base_url}}"], "path": ["api","speakers"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('speakerId', json.data.id);",
+              "console.log('✅ speakerId sauvegardé:', json.data.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer speaker — sans fullName ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Bio sans nom\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/speakers", "host": ["{{base_url}}"], "path": ["api","speakers"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "PUT mettre à jour speaker ✅",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jean-Pierre Martin (Mis à jour)\",\n  \"photoUrl\": \"https://i.pravatar.cc/150?img=11\",\n  \"bio\": \"Bio mise à jour\",\n  \"links\": [\n    { \"platform\": \"twitter\", \"url\": \"https://twitter.com/jpmartin\" }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/speakers/{{speakerId}}", "host": ["{{base_url}}"], "path": ["api","speakers","{{speakerId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+            ]}
+          }]
+        },
+        {
+          "name": "DELETE speaker ✅",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{base_url}}/api/speakers/{{speakerId}}", "host": ["{{base_url}}"], "path": ["api","speakers","{{speakerId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "🗓️ Sessions",
+      "item": [
+        {
+          "name": "GET session par ID ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/sessions/{{sessionId}}", "host": ["{{base_url}}"], "path": ["api","sessions","{{sessionId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data présent\", () => pm.expect(json.data).to.be.an('object'));",
+              "pm.test(\"isLive calculé\", () => pm.expect(json.data.isLive).to.be.a('boolean'));",
+              "pm.test(\"speakers présents\", () => pm.expect(json.data.speakers).to.be.an('array'));",
+              "pm.test(\"questions présentes\", () => pm.expect(json.data.questions).to.be.an('array'));",
+              "pm.test(\"event présent\", () => pm.expect(json.data.event).to.be.an('object'));"
+            ]}
+          }]
+        },
+        {
+          "name": "GET session — ID inexistant ❌",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/sessions/id-inexistant", "host": ["{{base_url}}"], "path": ["api","sessions","id-inexistant"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer session ✅",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"{{eventId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"title\": \"Session Test Postman\",\n  \"description\": \"Description de la session de test\",\n  \"startTime\": \"2026-09-10T10:00:00.000Z\",\n  \"endTime\": \"2026-09-10T11:30:00.000Z\",\n  \"capacity\": 50,\n  \"speakerIds\": [\"{{speakerId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/sessions", "host": ["{{base_url}}"], "path": ["api","sessions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('sessionId', json.data.id);",
+              "console.log('✅ sessionId sauvegardé:', json.data.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer session — sans speakerIds ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"{{eventId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"title\": \"Session sans speaker\",\n  \"description\": \"Test\",\n  \"startTime\": \"2026-09-10T10:00:00.000Z\",\n  \"endTime\": \"2026-09-10T11:30:00.000Z\",\n  \"capacity\": 50,\n  \"speakerIds\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/sessions", "host": ["{{base_url}}"], "path": ["api","sessions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400 — au moins 1 speaker requis\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer session — sans eventId ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"title\": \"Session sans eventId\",\n  \"description\": \"Test\",\n  \"startTime\": \"2026-09-10T10:00:00.000Z\",\n  \"endTime\": \"2026-09-10T11:30:00.000Z\",\n  \"capacity\": 50,\n  \"speakerIds\": [\"{{speakerId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/sessions", "host": ["{{base_url}}"], "path": ["api","sessions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400 — eventId requis\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer session — sans token ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"{{eventId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"title\": \"Session non autorisée\",\n  \"description\": \"Test\",\n  \"startTime\": \"2026-09-10T10:00:00.000Z\",\n  \"endTime\": \"2026-09-10T11:30:00.000Z\",\n  \"capacity\": 50,\n  \"speakerIds\": [\"{{speakerId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/sessions", "host": ["{{base_url}}"], "path": ["api","sessions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 401\", () => pm.response.to.have.status(401));"
+            ]}
+          }]
+        },
+        {
+          "name": "PUT mettre à jour session ✅",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"title\": \"Session Test Mise à Jour\",\n  \"description\": \"Description mise à jour\",\n  \"startTime\": \"2026-09-10T10:00:00.000Z\",\n  \"endTime\": \"2026-09-10T12:00:00.000Z\",\n  \"capacity\": 75,\n  \"speakerIds\": [\"{{speakerId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/sessions/{{sessionId}}", "host": ["{{base_url}}"], "path": ["api","sessions","{{sessionId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"speakers présents\", () => pm.expect(pm.response.json().data.speakers.length).to.be.above(0));"
+            ]}
+          }]
+        },
+        {
+          "name": "PUT session — speakerIds vide ❌",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"title\": \"Session sans speaker\",\n  \"description\": \"Test\",\n  \"startTime\": \"2026-09-10T10:00:00.000Z\",\n  \"endTime\": \"2026-09-10T12:00:00.000Z\",\n  \"capacity\": 50,\n  \"speakerIds\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/sessions/{{sessionId}}", "host": ["{{base_url}}"], "path": ["api","sessions","{{sessionId}}"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400 — speaker requis\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "💬 Questions",
+      "item": [
+        {
+          "name": "GET questions d'une session ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/sessions/{{sessionId}}/questions", "host": ["{{base_url}}"], "path": ["api","sessions","{{sessionId}}","questions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "if (json.data.length > 0) {",
+              "  pm.collectionVariables.set('questionId', json.data[0].id);",
+              "  console.log('✅ questionId sauvegardé:', json.data[0].id);",
+              "}",
+              "pm.test(\"tri par upvotes décroissant\", () => {",
+              "  const data = json.data;",
+              "  for (let i = 0; i < data.length - 1; i++) {",
+              "    pm.expect(data[i].upvotes).to.be.at.least(data[i+1].upvotes);",
+              "  }",
+              "});"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer question (avec nom) ✅",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Est-ce que React 19 change la façon de gérer le state ?\",\n  \"sessionId\": \"{{sessionId}}\",\n  \"authorName\": \"Marie Curie\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/questions", "host": ["{{base_url}}"], "path": ["api","questions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('questionId', json.id);",
+              "console.log('✅ questionId sauvegardé:', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer question anonyme ✅",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Question posée de façon anonyme\",\n  \"sessionId\": \"{{sessionId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/questions", "host": ["{{base_url}}"], "path": ["api","questions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"authorName null\", () => pm.expect(pm.response.json().authorName).to.be.null);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer question — session pas LIVE ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Question sur une session pas encore commencée\",\n  \"sessionId\": \"ID_SESSION_FUTURE_ICI\",\n  \"authorName\": \"Test User\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/questions", "host": ["{{base_url}}"], "path": ["api","questions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400 — session pas live\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer question — content vide ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"\",\n  \"sessionId\": \"{{sessionId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/questions", "host": ["{{base_url}}"], "path": ["api","questions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400 — content requis\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer question — sans sessionId ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Question sans sessionId\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/questions", "host": ["{{base_url}}"], "path": ["api","questions"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400 — sessionId requis\", () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST upvote question ✅",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/questions/{{questionId}}/upvote", "host": ["{{base_url}}"], "path": ["api","questions","{{questionId}}","upvote"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"upvotes incrémenté\", () => pm.expect(json.data.upvotes).to.be.above(0));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST upvote — question inexistante ❌",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/questions/id-inexistant/upvote", "host": ["{{base_url}}"], "path": ["api","questions","id-inexistant","upvote"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "🏥 Health",
+      "item": [
+        {
+          "name": "Health Check ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/health", "host": ["{{base_url}}"], "path": ["api","health"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"API running\", () => pm.expect(pm.response.json().status).to.include('running'));"
+            ]}
+          }]
+        }
+      ]
+    }
+
+  ]
+}

@@ -2,6 +2,15 @@ import { prisma } from "../config/lib/prisma";
 import {computeIsLive} from "../utils/isLive"
 export class SessionService {
 
+    async getSessions() {
+        return prisma.session.findMany({
+          include: {
+            room: true,
+            speakers: true
+          }
+        });
+      }
+    
     async getSessionById(id: string) {
         const session = await prisma.session.findUnique({
             where: { id },
@@ -29,6 +38,7 @@ export class SessionService {
         };
     }
     async postSession(
+        eventId: string,
         roomId: string,
         title: string,
         description: string,
@@ -43,6 +53,7 @@ export class SessionService {
 
         return prisma.session.create({
             data: {
+                eventId,
                 roomId, title, description, startTime, endTime, capacity,
                 speakers: {
                     connect: speakerIds.map(id => ({ id }))
@@ -54,6 +65,7 @@ export class SessionService {
 
     async putSession(
     id: string,
+    eventId: string,
     roomId: string,
     title: string,
     description: string,
@@ -69,6 +81,7 @@ export class SessionService {
     return prisma.session.update({
         where: { id },
         data: {
+            eventId,
             roomId, title, description, startTime, endTime, capacity,
             speakers: {
                 set: speakerIds.map(id => ({ id }))
@@ -77,4 +90,10 @@ export class SessionService {
         include: { speakers: true }
     });
 }
+
+async deleteSession(id: string) {
+    return prisma.session.delete({
+      where: { id }
+    });
+  }
 }

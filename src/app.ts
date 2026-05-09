@@ -17,15 +17,16 @@ export const createApp = () => {
     app.use(cors({ origin: FRONTEND_URL }))
     app.use(express.json())
 
-    app.get('/api/health', (req, res) => {
+    app.get('/api/health', (_req, res) => {
         res.json({ status: 'API is running' })
     })
-    app.use('/api', questionRoutes)
 
     app.use('/admin', adminRoutes)
     app.use('/api/rooms', roomRoutes)
     app.use('/api/sessions', sessionRoutes)
     app.use('/api/events', eventRoutes)
     app.use('/api/speakers', speakerRoutes)
+    app.use('/api', questionRoutes)
+    
     return app
 }

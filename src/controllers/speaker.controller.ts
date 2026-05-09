@@ -25,7 +25,7 @@ export class SpeakerController {
 
             return res.status(500).json({
                 success: false,
-                message: "Erreur serveur lors de la récupération des speakers",
+                message: "Server error while fetching speakers",
             });
         }
     };
@@ -55,7 +55,7 @@ export class SpeakerController {
             if (!speaker) {
                 return res.status(404).json({
                     success: false,
-                    message: "Speaker introuvable",
+                    message: "Speaker not found",
                 });
             }
 
@@ -69,7 +69,7 @@ export class SpeakerController {
 
                 questions: session.questions.map((q) => ({
                     ...q,
-                    authorName: q.authorName ?? "Anonyme",
+                    authorName: q.authorName ?? "Anonymous",
                 })),
             }));
 
@@ -85,7 +85,7 @@ export class SpeakerController {
 
             return res.status(500).json({
                 success: false,
-                message: "Erreur serveur lors de la récupération du speaker",
+                message: "Server error while fetching speaker",
             });
         }
     };
@@ -98,7 +98,7 @@ export class SpeakerController {
             if (!fullName || fullName.trim() === "") {
                 return res.status(400).json({
                     success: false,
-                    message: "fullName est requis",
+                    message: "fullName is required",
                 });
             }
 
@@ -133,7 +133,7 @@ export class SpeakerController {
                 message:
                     error instanceof Error
                         ? error.message
-                        : "Erreur lors de la création du speaker",
+                        : "Error while creating speaker",
             });
         }
     };
@@ -150,7 +150,7 @@ export class SpeakerController {
             if (!existingSpeaker) {
                 return res.status(404).json({
                     success: false,
-                    message: "Speaker introuvable",
+                    message: "Speaker not found",
                 });
             }
 
@@ -188,7 +188,7 @@ export class SpeakerController {
 
             return res.status(500).json({
                 success: false,
-                message: "Erreur lors de la mise à jour du speaker",
+                message: "Error while updating speaker",
             });
         }
     };
@@ -204,7 +204,7 @@ export class SpeakerController {
             if (!existingSpeaker) {
                 return res.status(404).json({
                     success: false,
-                    message: "Speaker introuvable",
+                    message: "Speaker not found",
                 });
             }
 
@@ -214,14 +214,14 @@ export class SpeakerController {
 
             return res.status(200).json({
                 success: true,
-                message: "Intervenant supprimé avec succès",
+                message: "Speaker deleted successfully",
             });
         } catch (error) {
             console.error("DELETE SPEAKER ERROR:", error);
 
             return res.status(500).json({
                 success: false,
-                message: "Erreur lors de la suppression du speaker",
+                message: "Error while deleting speaker",
             });
         }
     };

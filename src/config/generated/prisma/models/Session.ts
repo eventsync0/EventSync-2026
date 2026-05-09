@@ -36,6 +36,7 @@ export type SessionSumAggregateOutputType = {
 
 export type SessionMinAggregateOutputType = {
   id: string | null
+  eventId: string | null
   roomId: string | null
   title: string | null
   description: string | null
@@ -48,6 +49,7 @@ export type SessionMinAggregateOutputType = {
 
 export type SessionMaxAggregateOutputType = {
   id: string | null
+  eventId: string | null
   roomId: string | null
   title: string | null
   description: string | null
@@ -60,6 +62,7 @@ export type SessionMaxAggregateOutputType = {
 
 export type SessionCountAggregateOutputType = {
   id: number
+  eventId: number
   roomId: number
   title: number
   description: number
@@ -82,6 +85,7 @@ export type SessionSumAggregateInputType = {
 
 export type SessionMinAggregateInputType = {
   id?: true
+  eventId?: true
   roomId?: true
   title?: true
   description?: true
@@ -94,6 +98,7 @@ export type SessionMinAggregateInputType = {
 
 export type SessionMaxAggregateInputType = {
   id?: true
+  eventId?: true
   roomId?: true
   title?: true
   description?: true
@@ -106,6 +111,7 @@ export type SessionMaxAggregateInputType = {
 
 export type SessionCountAggregateInputType = {
   id?: true
+  eventId?: true
   roomId?: true
   title?: true
   description?: true
@@ -205,6 +211,7 @@ export type SessionGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type SessionGroupByOutputType = {
   id: string
+  eventId: string
   roomId: string
   title: string
   description: string
@@ -240,6 +247,7 @@ export type SessionWhereInput = {
   OR?: Prisma.SessionWhereInput[]
   NOT?: Prisma.SessionWhereInput | Prisma.SessionWhereInput[]
   id?: Prisma.StringFilter<"Session"> | string
+  eventId?: Prisma.StringFilter<"Session"> | string
   roomId?: Prisma.StringFilter<"Session"> | string
   title?: Prisma.StringFilter<"Session"> | string
   description?: Prisma.StringFilter<"Session"> | string
@@ -249,13 +257,14 @@ export type SessionWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Session"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Session"> | Date | string
   room?: Prisma.XOR<Prisma.RoomScalarRelationFilter, Prisma.RoomWhereInput>
-  event?: Prisma.EventListRelationFilter
+  event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
   questions?: Prisma.QuestionListRelationFilter
   speakers?: Prisma.SpeakerListRelationFilter
 }
 
 export type SessionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  eventId?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -265,7 +274,7 @@ export type SessionOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   room?: Prisma.RoomOrderByWithRelationInput
-  event?: Prisma.EventOrderByRelationAggregateInput
+  event?: Prisma.EventOrderByWithRelationInput
   questions?: Prisma.QuestionOrderByRelationAggregateInput
   speakers?: Prisma.SpeakerOrderByRelationAggregateInput
 }
@@ -275,6 +284,7 @@ export type SessionWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.SessionWhereInput | Prisma.SessionWhereInput[]
   OR?: Prisma.SessionWhereInput[]
   NOT?: Prisma.SessionWhereInput | Prisma.SessionWhereInput[]
+  eventId?: Prisma.StringFilter<"Session"> | string
   roomId?: Prisma.StringFilter<"Session"> | string
   title?: Prisma.StringFilter<"Session"> | string
   description?: Prisma.StringFilter<"Session"> | string
@@ -284,13 +294,14 @@ export type SessionWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Session"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Session"> | Date | string
   room?: Prisma.XOR<Prisma.RoomScalarRelationFilter, Prisma.RoomWhereInput>
-  event?: Prisma.EventListRelationFilter
+  event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
   questions?: Prisma.QuestionListRelationFilter
   speakers?: Prisma.SpeakerListRelationFilter
 }, "id">
 
 export type SessionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  eventId?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -311,6 +322,7 @@ export type SessionScalarWhereWithAggregatesInput = {
   OR?: Prisma.SessionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.SessionScalarWhereWithAggregatesInput | Prisma.SessionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Session"> | string
+  eventId?: Prisma.StringWithAggregatesFilter<"Session"> | string
   roomId?: Prisma.StringWithAggregatesFilter<"Session"> | string
   title?: Prisma.StringWithAggregatesFilter<"Session"> | string
   description?: Prisma.StringWithAggregatesFilter<"Session"> | string
@@ -331,13 +343,14 @@ export type SessionCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   room: Prisma.RoomCreateNestedOneWithoutSessionsInput
-  event?: Prisma.EventCreateNestedManyWithoutSessionsInput
+  event: Prisma.EventCreateNestedOneWithoutSessionsInput
   questions?: Prisma.QuestionCreateNestedManyWithoutSessionInput
   speakers?: Prisma.SpeakerCreateNestedManyWithoutSessionsInput
 }
 
 export type SessionUncheckedCreateInput = {
   id?: string
+  eventId: string
   roomId: string
   title: string
   description: string
@@ -346,7 +359,6 @@ export type SessionUncheckedCreateInput = {
   capacity: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  event?: Prisma.EventUncheckedCreateNestedManyWithoutSessionsInput
   questions?: Prisma.QuestionUncheckedCreateNestedManyWithoutSessionInput
   speakers?: Prisma.SpeakerUncheckedCreateNestedManyWithoutSessionsInput
 }
@@ -361,13 +373,14 @@ export type SessionUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   room?: Prisma.RoomUpdateOneRequiredWithoutSessionsNestedInput
-  event?: Prisma.EventUpdateManyWithoutSessionsNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutSessionsNestedInput
   questions?: Prisma.QuestionUpdateManyWithoutSessionNestedInput
   speakers?: Prisma.SpeakerUpdateManyWithoutSessionsNestedInput
 }
 
 export type SessionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   roomId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
@@ -376,13 +389,13 @@ export type SessionUncheckedUpdateInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  event?: Prisma.EventUncheckedUpdateManyWithoutSessionsNestedInput
   questions?: Prisma.QuestionUncheckedUpdateManyWithoutSessionNestedInput
   speakers?: Prisma.SpeakerUncheckedUpdateManyWithoutSessionsNestedInput
 }
 
 export type SessionCreateManyInput = {
   id?: string
+  eventId: string
   roomId: string
   title: string
   description: string
@@ -406,6 +419,7 @@ export type SessionUpdateManyMutationInput = {
 
 export type SessionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   roomId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
@@ -428,6 +442,7 @@ export type SessionOrderByRelationAggregateInput = {
 
 export type SessionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  eventId?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -444,6 +459,7 @@ export type SessionAvgOrderByAggregateInput = {
 
 export type SessionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  eventId?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -456,6 +472,7 @@ export type SessionMaxOrderByAggregateInput = {
 
 export type SessionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  eventId?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -478,12 +495,14 @@ export type SessionScalarRelationFilter = {
 export type SessionCreateNestedManyWithoutEventInput = {
   create?: Prisma.XOR<Prisma.SessionCreateWithoutEventInput, Prisma.SessionUncheckedCreateWithoutEventInput> | Prisma.SessionCreateWithoutEventInput[] | Prisma.SessionUncheckedCreateWithoutEventInput[]
   connectOrCreate?: Prisma.SessionCreateOrConnectWithoutEventInput | Prisma.SessionCreateOrConnectWithoutEventInput[]
+  createMany?: Prisma.SessionCreateManyEventInputEnvelope
   connect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
 }
 
 export type SessionUncheckedCreateNestedManyWithoutEventInput = {
   create?: Prisma.XOR<Prisma.SessionCreateWithoutEventInput, Prisma.SessionUncheckedCreateWithoutEventInput> | Prisma.SessionCreateWithoutEventInput[] | Prisma.SessionUncheckedCreateWithoutEventInput[]
   connectOrCreate?: Prisma.SessionCreateOrConnectWithoutEventInput | Prisma.SessionCreateOrConnectWithoutEventInput[]
+  createMany?: Prisma.SessionCreateManyEventInputEnvelope
   connect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
 }
 
@@ -491,6 +510,7 @@ export type SessionUpdateManyWithoutEventNestedInput = {
   create?: Prisma.XOR<Prisma.SessionCreateWithoutEventInput, Prisma.SessionUncheckedCreateWithoutEventInput> | Prisma.SessionCreateWithoutEventInput[] | Prisma.SessionUncheckedCreateWithoutEventInput[]
   connectOrCreate?: Prisma.SessionCreateOrConnectWithoutEventInput | Prisma.SessionCreateOrConnectWithoutEventInput[]
   upsert?: Prisma.SessionUpsertWithWhereUniqueWithoutEventInput | Prisma.SessionUpsertWithWhereUniqueWithoutEventInput[]
+  createMany?: Prisma.SessionCreateManyEventInputEnvelope
   set?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
   disconnect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
   delete?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
@@ -504,6 +524,7 @@ export type SessionUncheckedUpdateManyWithoutEventNestedInput = {
   create?: Prisma.XOR<Prisma.SessionCreateWithoutEventInput, Prisma.SessionUncheckedCreateWithoutEventInput> | Prisma.SessionCreateWithoutEventInput[] | Prisma.SessionUncheckedCreateWithoutEventInput[]
   connectOrCreate?: Prisma.SessionCreateOrConnectWithoutEventInput | Prisma.SessionCreateOrConnectWithoutEventInput[]
   upsert?: Prisma.SessionUpsertWithWhereUniqueWithoutEventInput | Prisma.SessionUpsertWithWhereUniqueWithoutEventInput[]
+  createMany?: Prisma.SessionCreateManyEventInputEnvelope
   set?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
   disconnect?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
   delete?: Prisma.SessionWhereUniqueInput | Prisma.SessionWhereUniqueInput[]
@@ -648,6 +669,11 @@ export type SessionCreateOrConnectWithoutEventInput = {
   create: Prisma.XOR<Prisma.SessionCreateWithoutEventInput, Prisma.SessionUncheckedCreateWithoutEventInput>
 }
 
+export type SessionCreateManyEventInputEnvelope = {
+  data: Prisma.SessionCreateManyEventInput | Prisma.SessionCreateManyEventInput[]
+  skipDuplicates?: boolean
+}
+
 export type SessionUpsertWithWhereUniqueWithoutEventInput = {
   where: Prisma.SessionWhereUniqueInput
   update: Prisma.XOR<Prisma.SessionUpdateWithoutEventInput, Prisma.SessionUncheckedUpdateWithoutEventInput>
@@ -669,6 +695,7 @@ export type SessionScalarWhereInput = {
   OR?: Prisma.SessionScalarWhereInput[]
   NOT?: Prisma.SessionScalarWhereInput | Prisma.SessionScalarWhereInput[]
   id?: Prisma.StringFilter<"Session"> | string
+  eventId?: Prisma.StringFilter<"Session"> | string
   roomId?: Prisma.StringFilter<"Session"> | string
   title?: Prisma.StringFilter<"Session"> | string
   description?: Prisma.StringFilter<"Session"> | string
@@ -688,13 +715,14 @@ export type SessionCreateWithoutRoomInput = {
   capacity: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  event?: Prisma.EventCreateNestedManyWithoutSessionsInput
+  event: Prisma.EventCreateNestedOneWithoutSessionsInput
   questions?: Prisma.QuestionCreateNestedManyWithoutSessionInput
   speakers?: Prisma.SpeakerCreateNestedManyWithoutSessionsInput
 }
 
 export type SessionUncheckedCreateWithoutRoomInput = {
   id?: string
+  eventId: string
   title: string
   description: string
   startTime: Date | string
@@ -702,7 +730,6 @@ export type SessionUncheckedCreateWithoutRoomInput = {
   capacity: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  event?: Prisma.EventUncheckedCreateNestedManyWithoutSessionsInput
   questions?: Prisma.QuestionUncheckedCreateNestedManyWithoutSessionInput
   speakers?: Prisma.SpeakerUncheckedCreateNestedManyWithoutSessionsInput
 }
@@ -743,12 +770,13 @@ export type SessionCreateWithoutQuestionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   room: Prisma.RoomCreateNestedOneWithoutSessionsInput
-  event?: Prisma.EventCreateNestedManyWithoutSessionsInput
+  event: Prisma.EventCreateNestedOneWithoutSessionsInput
   speakers?: Prisma.SpeakerCreateNestedManyWithoutSessionsInput
 }
 
 export type SessionUncheckedCreateWithoutQuestionsInput = {
   id?: string
+  eventId: string
   roomId: string
   title: string
   description: string
@@ -757,7 +785,6 @@ export type SessionUncheckedCreateWithoutQuestionsInput = {
   capacity: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  event?: Prisma.EventUncheckedCreateNestedManyWithoutSessionsInput
   speakers?: Prisma.SpeakerUncheckedCreateNestedManyWithoutSessionsInput
 }
 
@@ -787,12 +814,13 @@ export type SessionUpdateWithoutQuestionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   room?: Prisma.RoomUpdateOneRequiredWithoutSessionsNestedInput
-  event?: Prisma.EventUpdateManyWithoutSessionsNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutSessionsNestedInput
   speakers?: Prisma.SpeakerUpdateManyWithoutSessionsNestedInput
 }
 
 export type SessionUncheckedUpdateWithoutQuestionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   roomId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
@@ -801,7 +829,6 @@ export type SessionUncheckedUpdateWithoutQuestionsInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  event?: Prisma.EventUncheckedUpdateManyWithoutSessionsNestedInput
   speakers?: Prisma.SpeakerUncheckedUpdateManyWithoutSessionsNestedInput
 }
 
@@ -815,12 +842,13 @@ export type SessionCreateWithoutSpeakersInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   room: Prisma.RoomCreateNestedOneWithoutSessionsInput
-  event?: Prisma.EventCreateNestedManyWithoutSessionsInput
+  event: Prisma.EventCreateNestedOneWithoutSessionsInput
   questions?: Prisma.QuestionCreateNestedManyWithoutSessionInput
 }
 
 export type SessionUncheckedCreateWithoutSpeakersInput = {
   id?: string
+  eventId: string
   roomId: string
   title: string
   description: string
@@ -829,7 +857,6 @@ export type SessionUncheckedCreateWithoutSpeakersInput = {
   capacity: number
   createdAt?: Date | string
   updatedAt?: Date | string
-  event?: Prisma.EventUncheckedCreateNestedManyWithoutSessionsInput
   questions?: Prisma.QuestionUncheckedCreateNestedManyWithoutSessionInput
 }
 
@@ -852,6 +879,18 @@ export type SessionUpdateWithWhereUniqueWithoutSpeakersInput = {
 export type SessionUpdateManyWithWhereWithoutSpeakersInput = {
   where: Prisma.SessionScalarWhereInput
   data: Prisma.XOR<Prisma.SessionUpdateManyMutationInput, Prisma.SessionUncheckedUpdateManyWithoutSpeakersInput>
+}
+
+export type SessionCreateManyEventInput = {
+  id?: string
+  roomId: string
+  title: string
+  description: string
+  startTime: Date | string
+  endTime: Date | string
+  capacity: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type SessionUpdateWithoutEventInput = {
@@ -896,6 +935,7 @@ export type SessionUncheckedUpdateManyWithoutEventInput = {
 
 export type SessionCreateManyRoomInput = {
   id?: string
+  eventId: string
   title: string
   description: string
   startTime: Date | string
@@ -914,13 +954,14 @@ export type SessionUpdateWithoutRoomInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  event?: Prisma.EventUpdateManyWithoutSessionsNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutSessionsNestedInput
   questions?: Prisma.QuestionUpdateManyWithoutSessionNestedInput
   speakers?: Prisma.SpeakerUpdateManyWithoutSessionsNestedInput
 }
 
 export type SessionUncheckedUpdateWithoutRoomInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -928,13 +969,13 @@ export type SessionUncheckedUpdateWithoutRoomInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  event?: Prisma.EventUncheckedUpdateManyWithoutSessionsNestedInput
   questions?: Prisma.QuestionUncheckedUpdateManyWithoutSessionNestedInput
   speakers?: Prisma.SpeakerUncheckedUpdateManyWithoutSessionsNestedInput
 }
 
 export type SessionUncheckedUpdateManyWithoutRoomInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -954,12 +995,13 @@ export type SessionUpdateWithoutSpeakersInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   room?: Prisma.RoomUpdateOneRequiredWithoutSessionsNestedInput
-  event?: Prisma.EventUpdateManyWithoutSessionsNestedInput
+  event?: Prisma.EventUpdateOneRequiredWithoutSessionsNestedInput
   questions?: Prisma.QuestionUpdateManyWithoutSessionNestedInput
 }
 
 export type SessionUncheckedUpdateWithoutSpeakersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   roomId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
@@ -968,12 +1010,12 @@ export type SessionUncheckedUpdateWithoutSpeakersInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  event?: Prisma.EventUncheckedUpdateManyWithoutSessionsNestedInput
   questions?: Prisma.QuestionUncheckedUpdateManyWithoutSessionNestedInput
 }
 
 export type SessionUncheckedUpdateManyWithoutSpeakersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
   roomId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
@@ -990,13 +1032,11 @@ export type SessionUncheckedUpdateManyWithoutSpeakersInput = {
  */
 
 export type SessionCountOutputType = {
-  event: number
   questions: number
   speakers: number
 }
 
 export type SessionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  event?: boolean | SessionCountOutputTypeCountEventArgs
   questions?: boolean | SessionCountOutputTypeCountQuestionsArgs
   speakers?: boolean | SessionCountOutputTypeCountSpeakersArgs
 }
@@ -1009,13 +1049,6 @@ export type SessionCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
    * Select specific fields to fetch from the SessionCountOutputType
    */
   select?: Prisma.SessionCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * SessionCountOutputType without action
- */
-export type SessionCountOutputTypeCountEventArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.EventWhereInput
 }
 
 /**
@@ -1035,6 +1068,7 @@ export type SessionCountOutputTypeCountSpeakersArgs<ExtArgs extends runtime.Type
 
 export type SessionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  eventId?: boolean
   roomId?: boolean
   title?: boolean
   description?: boolean
@@ -1044,7 +1078,7 @@ export type SessionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   createdAt?: boolean
   updatedAt?: boolean
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
-  event?: boolean | Prisma.Session$eventArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   questions?: boolean | Prisma.Session$questionsArgs<ExtArgs>
   speakers?: boolean | Prisma.Session$speakersArgs<ExtArgs>
   _count?: boolean | Prisma.SessionCountOutputTypeDefaultArgs<ExtArgs>
@@ -1052,6 +1086,7 @@ export type SessionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 
 export type SessionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  eventId?: boolean
   roomId?: boolean
   title?: boolean
   description?: boolean
@@ -1061,10 +1096,12 @@ export type SessionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   createdAt?: boolean
   updatedAt?: boolean
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["session"]>
 
 export type SessionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  eventId?: boolean
   roomId?: boolean
   title?: boolean
   description?: boolean
@@ -1074,10 +1111,12 @@ export type SessionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   createdAt?: boolean
   updatedAt?: boolean
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["session"]>
 
 export type SessionSelectScalar = {
   id?: boolean
+  eventId?: boolean
   roomId?: boolean
   title?: boolean
   description?: boolean
@@ -1088,31 +1127,34 @@ export type SessionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type SessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "roomId" | "title" | "description" | "startTime" | "endTime" | "capacity" | "createdAt" | "updatedAt", ExtArgs["result"]["session"]>
+export type SessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "eventId" | "roomId" | "title" | "description" | "startTime" | "endTime" | "capacity" | "createdAt" | "updatedAt", ExtArgs["result"]["session"]>
 export type SessionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
-  event?: boolean | Prisma.Session$eventArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
   questions?: boolean | Prisma.Session$questionsArgs<ExtArgs>
   speakers?: boolean | Prisma.Session$speakersArgs<ExtArgs>
   _count?: boolean | Prisma.SessionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SessionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }
 export type SessionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
+  event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
 }
 
 export type $SessionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Session"
   objects: {
     room: Prisma.$RoomPayload<ExtArgs>
-    event: Prisma.$EventPayload<ExtArgs>[]
+    event: Prisma.$EventPayload<ExtArgs>
     questions: Prisma.$QuestionPayload<ExtArgs>[]
     speakers: Prisma.$SpeakerPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    eventId: string
     roomId: string
     title: string
     description: string
@@ -1516,7 +1558,7 @@ readonly fields: SessionFieldRefs;
 export interface Prisma__SessionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   room<T extends Prisma.RoomDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RoomDefaultArgs<ExtArgs>>): Prisma.Prisma__RoomClient<runtime.Types.Result.GetResult<Prisma.$RoomPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  event<T extends Prisma.Session$eventArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$eventArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  event<T extends Prisma.EventDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EventDefaultArgs<ExtArgs>>): Prisma.Prisma__EventClient<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   questions<T extends Prisma.Session$questionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$questionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   speakers<T extends Prisma.Session$speakersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$speakersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SpeakerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1549,6 +1591,7 @@ export interface Prisma__SessionClient<T, Null = never, ExtArgs extends runtime.
  */
 export interface SessionFieldRefs {
   readonly id: Prisma.FieldRef<"Session", 'String'>
+  readonly eventId: Prisma.FieldRef<"Session", 'String'>
   readonly roomId: Prisma.FieldRef<"Session", 'String'>
   readonly title: Prisma.FieldRef<"Session", 'String'>
   readonly description: Prisma.FieldRef<"Session", 'String'>
@@ -1955,30 +1998,6 @@ export type SessionDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Sessions to delete.
    */
   limit?: number
-}
-
-/**
- * Session.event
- */
-export type Session$eventArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Event
-   */
-  select?: Prisma.EventSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Event
-   */
-  omit?: Prisma.EventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.EventInclude<ExtArgs> | null
-  where?: Prisma.EventWhereInput
-  orderBy?: Prisma.EventOrderByWithRelationInput | Prisma.EventOrderByWithRelationInput[]
-  cursor?: Prisma.EventWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.EventScalarFieldEnum | Prisma.EventScalarFieldEnum[]
 }
 
 /**

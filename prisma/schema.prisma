@@ -45,6 +45,7 @@ model Room {
 
 model Session {
   id          String   @id @default(uuid())
+  eventId     String 
   roomId      String                         
   title       String
   description String
@@ -54,7 +55,7 @@ model Session {
   room        Room     @relation(fields: [roomId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  event       Event[]
+  event       Event    @relation(fields: [eventId], references: [id])
   questions   Question[]
   speakers    Speaker[] @relation("SessionSpeakers")
 }
@@ -84,7 +85,7 @@ model Speaker {
 model SpeakerLink {
   id        String   @id @default(uuid())
   speakerId String
-  platform  String   // ex: 'twitter', 'linkedin', 'website', 'github'
+  platform  String
   url       String
   speaker   Speaker  @relation(fields: [speakerId], references: [id], onDelete: Cascade)
 }
