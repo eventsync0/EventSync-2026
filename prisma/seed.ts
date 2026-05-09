@@ -4,7 +4,6 @@ import bcrypt from "bcrypt";
 async function main() {
     console.log("🌱 Début du seeding...");
 
-    // 1. Admin
     const existing = await prisma.admin.findUnique({
         where: { email: "admin@eventsync.com" }
     });
@@ -28,21 +27,23 @@ async function main() {
         console.log("✅ Admin créé");
     }
 
-    // 2. Clean DB
     console.log("🗑️ Nettoyage...");
     await prisma.question.deleteMany({});
     await prisma.session.deleteMany({});
     await prisma.event.deleteMany({});
     await prisma.room.deleteMany({});
+    await prisma.speakerLink.deleteMany({});
     await prisma.speaker.deleteMany({});
+    await prisma.refreshToken.deleteMany({ where: { adminId: adminUser.id } });
     console.log("✅ Nettoyage terminé");
 
-    // 3. Rooms
     const roomA = await prisma.room.create({ data: { name: "Grand Amphithéâtre" } });
     const roomB = await prisma.room.create({ data: { name: "Salle de Conférence B" } });
     const roomC = await prisma.room.create({ data: { name: "Studio Live" } });
 
-    // 4. Events
+    console.log("✅ Rooms créées");
+
+
     const now = new Date();
 
     const futureStart = new Date(now);
@@ -63,10 +64,10 @@ async function main() {
     });
 
     const todayStart = new Date(now);
-    todayStart.setHours(now.getHours() - 2);
+    todayStart.setHours(now.getHours() - 2, 0, 0, 0);
 
     const todayEnd = new Date(now);
-    todayEnd.setHours(now.getHours() + 3);
+    todayEnd.setHours(now.getHours() + 3, 0, 0, 0);
 
     const event2 = await prisma.event.create({
         data: {
@@ -78,85 +79,17 @@ async function main() {
         }
     });
 
-    // 5. Sessions
-    const session1_event1 = await prisma.session.create({
-        data: {
-            title: "Keynote AI",
-            description: "IA 2026",
-            startTime: new Date(futureStart.getTime() + 3600000),
-            endTime: new Date(futureStart.getTime() + 7200000),
-            capacity: 200,
-            roomId: roomA.id,
-            event: { connect: { id: event1.id } }
-        }
-    });
+    console.log("✅ Events créés");
 
-    const session2_event1 = await prisma.session.create({
-        data: {
-            title: "Docker Kubernetes",
-            description: "Containerisation",
-            startTime: new Date(futureStart.getTime() + 7200000),
-            endTime: new Date(futureStart.getTime() + 14400000),
-            capacity: 50,
-            roomId: roomB.id,
-            event: { connect: { id: event1.id } }
-        }
-    });
-
-    const session1_event2 = await prisma.session.create({
-        data: {
-            title: "React 19",
-            description: "Nouveautés React",
-            startTime: new Date(todayStart.getTime() + 1800000),
-            endTime: new Date(todayStart.getTime() + 7200000),
-            capacity: 100,
-            roomId: roomC.id,
-            event: { connect: { id: event2.id } }
-        }
-    });
-
-    const session2_event2 = await prisma.session.create({
-        data: {
-            title: "React Hooks Live",
-            description: "Coding session",
-            startTime: new Date(todayStart.getTime() + 7200000),
-            endTime: new Date(todayStart.getTime() + 12600000),
-            capacity: 80,
-            roomId: roomC.id,
-            event: { connect: { id: event2.id } }
-        }
-    });
-
-    console.log("✅ Sessions créées");
-
-    // 6. Questions
-    await prisma.question.createMany({
-        data: [
-            {
-                content: "Prérequis ?",
-                authorName: "Marie Dupont",
-                upvotes: 12,
-                sessionId: session1_event2.id
-            },
-            {
-                content: "React 19 stable ?",
-                authorName: "Thomas Martin",
-                upvotes: 8,
-                sessionId: session1_event2.id
-            }
-        ]
-    });
-
-    // 7. SPEAKERS
     console.log("\n🎤 Création speakers...");
 
     const alice = await prisma.speaker.create({
         data: {
             fullName: "Alice Johnson",
             photoUrl: "https://i.pravatar.cc/150?img=1",
-            bio: "AI Expert",
+            bio: "AI Expert & Researcher",
             links: {
-                create: [{ platform: "linkedin", url: "https://linkedin.com" }]
+                create: [{ platform: "linkedin", url: "https://linkedin.com/in/alice" }]
             }
         }
     });
@@ -165,9 +98,9 @@ async function main() {
         data: {
             fullName: "David Kim",
             photoUrl: "https://i.pravatar.cc/150?img=2",
-            bio: "Fullstack Dev",
+            bio: "Fullstack Developer",
             links: {
-                create: [{ platform: "github", url: "https://github.com" }]
+                create: [{ platform: "github", url: "https://github.com/davidkim" }]
             }
         }
     });
@@ -176,9 +109,9 @@ async function main() {
         data: {
             fullName: "Sarah Lopez",
             photoUrl: "https://i.pravatar.cc/150?img=3",
-            bio: "DevOps",
+            bio: "DevOps Engineer",
             links: {
-                create: [{ platform: "twitter", url: "https://twitter.com" }]
+                create: [{ platform: "twitter", url: "https://twitter.com/sarahlopez" }]
             }
         }
     });
@@ -189,66 +122,117 @@ async function main() {
             photoUrl: "https://i.pravatar.cc/150?img=4",
             bio: "Architecte logiciel",
             links: {
-                create: [{ platform: "website", url: "https://site.com" }]
+                create: [{ platform: "website", url: "https://michaelbrown.dev" }]
             }
         }
     });
 
     console.log("✅ Speakers créés");
 
-    // 8. LIAISON SPEAKERS ↔ SESSIONS
-    console.log("\n🔗 Liaison speakers ↔ sessions...");
+    console.log("\n📅 Création sessions...");
 
-    await prisma.session.update({
-        where: { id: session1_event1.id },
+    const session1_event1 = await prisma.session.create({
         data: {
-            speakers: { connect: [{ id: alice.id }, { id: david.id }] }
-        }
-    });
-
-    await prisma.session.update({
-        where: { id: session2_event1.id },
-        data: {
-            speakers: { connect: [{ id: sarah.id }] }
-        }
-    });
-
-    await prisma.session.update({
-        where: { id: session1_event2.id },
-        data: {
-            speakers: { connect: [{ id: david.id }, { id: michael.id }] }
-        }
-    });
-
-    await prisma.session.update({
-        where: { id: session2_event2.id },
-        data: {
+            title: "Keynote AI",
+            description: "L'IA en 2026 : où en sommes-nous ?",
+            startTime: new Date(futureStart.getTime() + 3600000),
+            endTime: new Date(futureStart.getTime() + 7200000),
+            capacity: 200,
+            eventId: event1.id,
+            roomId: roomA.id,
             speakers: {
-                connect: [
-                    { id: alice.id },
-                    { id: sarah.id },
-                    { id: michael.id }
-                ]
+                connect: [{ id: alice.id }, { id: david.id }]
             }
         }
     });
 
-    console.log("✅ Relations speakers ↔ sessions OK");
+    const session2_event1 = await prisma.session.create({
+        data: {
+            title: "Docker & Kubernetes",
+            description: "Containerisation avancée",
+            startTime: new Date(futureStart.getTime() + 7200000),
+            endTime: new Date(futureStart.getTime() + 14400000),
+            capacity: 50,
+            eventId: event1.id,
+            roomId: roomB.id,
+            speakers: {
+                connect: [{ id: sarah.id }]
+            }
+        }
+    });
 
-    // 9. Vérification obligatoire
-    const check = await prisma.session.findMany({
+    const session1_event2 = await prisma.session.create({
+        data: {
+            title: "React 19 — Nouveautés",
+            description: "Tour d'horizon des nouveautés React 19",
+            startTime: new Date(todayStart.getTime() + 1800000),
+            endTime: new Date(todayStart.getTime() + 7200000),
+            capacity: 100,
+            eventId: event2.id,
+            roomId: roomC.id,
+            speakers: {
+                connect: [{ id: david.id }, { id: michael.id }]
+            }
+        }
+    });
+
+    const session2_event2 = await prisma.session.create({
+        data: {
+            title: "React Hooks Live Coding",
+            description: "Session de code en direct",
+            startTime: new Date(todayStart.getTime() + 7200000),
+            endTime: new Date(todayStart.getTime() + 12600000),
+            capacity: 80,
+            eventId: event2.id,
+            roomId: roomC.id,
+            speakers: {
+                connect: [{ id: alice.id }, { id: sarah.id }, { id: michael.id }]
+            }
+        }
+    });
+
+    console.log("✅ Sessions créées");
+
+    console.log("\n💬 Création questions...");
+
+    await prisma.question.createMany({
+        data: [
+            {
+                content: "Quels sont les prérequis pour cette session ?",
+                authorName: "Marie Dupont",
+                upvotes: 12,
+                sessionId: session1_event2.id
+            },
+            {
+                content: "React 19 est-il stable en production ?",
+                authorName: "Thomas Martin",
+                upvotes: 8,
+                sessionId: session1_event2.id
+            },
+            {
+                content: "Quelle différence avec React 18 ?",
+                authorName: null,
+                upvotes: 5,
+                sessionId: session1_event2.id
+            }
+        ]
+    });
+
+    console.log("✅ Questions créées");
+
+    const allSessions = await prisma.session.findMany({
         include: { speakers: true }
     });
 
-    const invalid = check.filter(s => s.speakers.length === 0);
+    const invalid = allSessions.filter(s => s.speakers.length === 0);
 
     if (invalid.length > 0) {
-        console.log("❌ Sessions sans speakers :", invalid);
+        console.error("❌ Sessions sans speakers :", invalid.map(s => s.title));
+        process.exit(1);
     } else {
         console.log("✅ Toutes les sessions ont au moins 1 speaker");
     }
 
-    // 10. Refresh token
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -260,14 +244,13 @@ async function main() {
         }
     });
 
-    // 11. Résumé
     console.log("\n🎉 SEED TERMINÉ !");
-    console.log(`👤 Admin: ${adminUser.email}`);
-    console.log(`🏢 Rooms: ${await prisma.room.count()}`);
-    console.log(`📅 Events: ${await prisma.event.count()}`);
-    console.log(`📅 Sessions: ${await prisma.session.count()}`);
-    console.log(`💬 Questions: ${await prisma.question.count()}`);
-    console.log(`🎤 Speakers: ${await prisma.speaker.count()}`);
+    console.log(`👤 Admin      : ${adminUser.email} / adminpassword123`);
+    console.log(`🏢 Rooms      : ${await prisma.room.count()}`);
+    console.log(`📅 Events     : ${await prisma.event.count()}`);
+    console.log(`🗓️  Sessions   : ${await prisma.session.count()}`);
+    console.log(`💬 Questions  : ${await prisma.question.count()}`);
+    console.log(`🎤 Speakers   : ${await prisma.speaker.count()}`);
 }
 
 main()

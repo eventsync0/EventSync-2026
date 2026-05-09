@@ -1,4 +1,3 @@
-import { title } from "node:process";
 import { prisma } from "../config/lib/prisma";
 
 export class EventService {

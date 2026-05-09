@@ -1,11 +1,10 @@
-
-import e, { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { EventService } from '../services/event.service';
 
 export class EventController {
    
 
-    getEvents = async (req: Request, res: Response): Promise<void> => {
+    getEvents = async (_req: Request, res: Response): Promise<void> => {
         try {
             const events = await EventService.getEvents();
             res.status(200).json(events);

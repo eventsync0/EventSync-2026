@@ -61,7 +61,6 @@ export const authMiddleware = async (
     }
 };
 
-// Middleware spécifique pour vérifier si l'utilisateur est admin
 export const adminMiddleware = async (
     req: AuthRequest,
     res: Response,

@@ -8,8 +8,8 @@ const eventController = new EventController();
 router.get("/", eventController.getEvents);
 router.get("/:id", eventController.getEventById);
 
-router.post("/event", authMiddleware, eventController.createEvent);
-router.put("/event/:id", authMiddleware, eventController.updateEvent);
-router.delete("/event/:id", authMiddleware, eventController.deleteEvent);
+router.post("/", authMiddleware, eventController.createEvent);
+router.put("/:id", authMiddleware, eventController.updateEvent);
+router.delete("/:id", authMiddleware, eventController.deleteEvent);
 
 export default router;

@@ -124,6 +124,7 @@ export type RoomScalarFieldEnum = (typeof RoomScalarFieldEnum)[keyof typeof Room
 
 export const SessionScalarFieldEnum = {
   id: 'id',
+  eventId: 'eventId',
   roomId: 'roomId',
   title: 'title',
   description: 'description',

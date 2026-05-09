@@ -1,0 +1,984 @@
+openapi: 3.0.0
+info:
+  title: EventSync-2026 API
+  version: 1.0.0
+  description: |
+    API de gestion d'événements et d'engagement des participants en temps réel.
+    
+    ## Authentification
+    Les routes Admin nécessitent un Bearer Token JWT obtenu via `POST /admin/login`.
+    Les routes publiques sont accessibles sans authentification.
+    
+    ## Règles métier
+    - Une session appartient à **un seul** événement
+    - Une session est associée à **une seule** salle
+    - Une session possède **au moins un** intervenant
+    - Les questions ne peuvent être créées que lorsque la session est **live**
+    - Les favoris sont gérés côté navigateur (localStorage)
+
+servers:
+  - url: http://localhost:3001
+    description: Serveur de développement
+
+tags:
+  - name: Auth
+    description: Authentification administrateur
+  - name: Events
+    description: Gestion des événements (public + admin)
+  - name: Sessions
+    description: Gestion des sessions (public + admin)
+  - name: Speakers
+    description: Gestion des intervenants (public + admin)
+  - name: Rooms
+    description: Gestion des salles (public + admin)
+  - name: Questions
+    description: Questions et upvotes en temps réel (public)
+  - name: Health
+    description: Santé de l'API
+
+# ─────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    # ── Erreurs ──
+    Error:
+      type: object
+      properties:
+        error:   { type: string, example: "Message d'erreur" }
+        message: { type: string, example: "Message d'erreur alternatif" }
+
+    # ── Auth ──
+    AdminLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email, example: "admin@eventsync.com" }
+        password: { type: string, example: "adminpassword123" }
+
+    TokenResponse:
+      type: object
+      properties:
+        message:      { type: string, example: "Login successful" }
+        accessToken:  { type: string, example: "eyJhbGci..." }
+        refreshToken: { type: string, example: "eyJhbGci..." }
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string, example: "eyJhbGci..." }
+
+    AdminProfile:
+      type: object
+      properties:
+        id:        { type: string, format: uuid }
+        name:      { type: string, example: "Admin" }
+        email:     { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # ── Room ──
+    Room:
+      type: object
+      properties:
+        id:   { type: string, format: uuid }
+        name: { type: string, example: "Grand Amphithéâtre" }
+
+    RoomInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, example: "Salle de Conférence A" }
+
+    # ── SpeakerLink ──
+    SpeakerLink:
+      type: object
+      properties:
+        id:        { type: string, format: uuid }
+        platform:  { type: string, example: "linkedin", enum: [linkedin, twitter, github, website] }
+        url:       { type: string, format: uri, example: "https://linkedin.com/in/alice" }
+        speakerId: { type: string, format: uuid }
+
+    SpeakerLinkInput:
+      type: object
+      required: [platform, url]
+      properties:
+        platform: { type: string, example: "linkedin", enum: [linkedin, twitter, github, website] }
+        url:      { type: string, format: uri, example: "https://linkedin.com/in/alice" }
+
+    # ── Speaker ──
+    Speaker:
+      type: object
+      properties:
+        id:        { type: string, format: uuid }
+        fullName:  { type: string, example: "Alice Johnson" }
+        photoUrl:  { type: string, format: uri, nullable: true, example: "https://i.pravatar.cc/150?img=1" }
+        bio:       { type: string, nullable: true, example: "AI Expert & Researcher" }
+        links:     { type: array, items: { $ref: '#/components/schemas/SpeakerLink' } }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SpeakerWithSessions:
+      allOf:
+        - $ref: '#/components/schemas/Speaker'
+        - type: object
+          properties:
+            sessions:
+              type: array
+              items: { $ref: '#/components/schemas/SessionSummary' }
+
+    SpeakerInput:
+      type: object
+      required: [fullName]
+      properties:
+        fullName:     { type: string, example: "Alice Johnson" }
+        photoUrl:     { type: string, format: uri, nullable: true, example: "https://i.pravatar.cc/150?img=1" }
+        bio:          { type: string, nullable: true, example: "AI Expert & Researcher" }
+        speakerLinks:
+          type: array
+          items: { $ref: '#/components/schemas/SpeakerLinkInput' }
+
+    SpeakerUpdateInput:
+      type: object
+      required: [fullName]
+      properties:
+        fullName: { type: string, example: "Alice Johnson" }
+        photoUrl: { type: string, format: uri, nullable: true }
+        bio:      { type: string, nullable: true }
+        links:
+          type: array
+          items: { $ref: '#/components/schemas/SpeakerLinkInput' }
+
+    # ── Question ──
+    Question:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        content:    { type: string, example: "Quels sont les prérequis ?" }
+        authorName: { type: string, nullable: true, example: "Marie Curie" }
+        upvotes:    { type: integer, minimum: 0, example: 5 }
+        sessionId:  { type: string, format: uuid }
+        createdAt:  { type: string, format: date-time }
+
+    QuestionInput:
+      type: object
+      required: [content, sessionId]
+      properties:
+        content:    { type: string, minLength: 1, example: "Est-ce que React 19 change la gestion du state ?" }
+        sessionId:  { type: string, format: uuid }
+        authorName: { type: string, nullable: true, example: "Jean Dupont" }
+
+    # ── Session ──
+    SessionSummary:
+      type: object
+      properties:
+        id:          { type: string, format: uuid }
+        eventId:     { type: string, format: uuid }
+        roomId:      { type: string, format: uuid }
+        title:       { type: string, example: "Keynote AI" }
+        description: { type: string }
+        startTime:   { type: string, format: date-time }
+        endTime:     { type: string, format: date-time }
+        capacity:    { type: integer, example: 200 }
+        isLive:      { type: boolean, example: false }
+        room:        { $ref: '#/components/schemas/Room' }
+        speakers:    { type: array, items: { $ref: '#/components/schemas/Speaker' } }
+        createdAt:   { type: string, format: date-time }
+        updatedAt:   { type: string, format: date-time }
+
+    SessionDetail:
+      allOf:
+        - $ref: '#/components/schemas/SessionSummary'
+        - type: object
+          properties:
+            event:     { $ref: '#/components/schemas/Event' }
+            questions: { type: array, items: { $ref: '#/components/schemas/Question' } }
+
+    SessionInput:
+      type: object
+      required: [eventId, roomId, title, description, startTime, endTime, capacity, speakerIds]
+      properties:
+        eventId:     { type: string, format: uuid }
+        roomId:      { type: string, format: uuid }
+        title:       { type: string, example: "Keynote Intelligence Artificielle" }
+        description: { type: string, example: "Présentation des tendances IA 2026" }
+        startTime:   { type: string, format: date-time, example: "2026-06-15T10:00:00.000Z" }
+        endTime:     { type: string, format: date-time, example: "2026-06-15T11:30:00.000Z" }
+        capacity:    { type: integer, minimum: 1, example: 250 }
+        speakerIds:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+          example: ["9f89b59d-99ad-4399-9c51-d3bda313d4c4"]
+
+    SessionUpdateInput:
+      type: object
+      required: [roomId, title, description, startTime, endTime, capacity, speakerIds]
+      properties:
+        roomId:      { type: string, format: uuid }
+        title:       { type: string }
+        description: { type: string }
+        startTime:   { type: string, format: date-time }
+        endTime:     { type: string, format: date-time }
+        capacity:    { type: integer, minimum: 1 }
+        speakerIds:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+
+    # ── Event ──
+    Event:
+      type: object
+      properties:
+        id:          { type: string, format: uuid }
+        title:       { type: string, example: "Conférence Tech 2026" }
+        description: { type: string, example: "IA + Web + Mobile" }
+        startDate:   { type: string, format: date-time }
+        endDate:     { type: string, format: date-time }
+        location:    { type: string, example: "Paris" }
+        createdAt:   { type: string, format: date-time }
+        updatedAt:   { type: string, format: date-time }
+
+    EventWithSessions:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            sessions:
+              type: array
+              items: { $ref: '#/components/schemas/SessionSummary' }
+
+    EventInput:
+      type: object
+      required: [title, description, startDate, endDate, location]
+      properties:
+        title:       { type: string, example: "DevSummit 2026" }
+        description: { type: string, example: "Conférence annuelle des développeurs" }
+        startDate:   { type: string, format: date-time, example: "2026-09-10T09:00:00.000Z" }
+        endDate:     { type: string, format: date-time, example: "2026-09-10T18:00:00.000Z" }
+        location:    { type: string, example: "Lyon" }
+
+  # ── Réponses réutilisables ──
+  responses:
+    Unauthorized:
+      description: Token manquant ou invalide
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "Unauthorized" }
+
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: "Non trouvé" }
+
+    BadRequest:
+      description: Données invalides ou manquantes
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+    InternalError:
+      description: Erreur serveur interne
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: "Internal server error" }
+
+# ─────────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────────
+paths:
+
+  # ══════════════════════════════════════════
+  # HEALTH
+  # ══════════════════════════════════════════
+  /api/health:
+    get:
+      summary: Vérification de l'état de l'API
+      tags: [Health]
+      responses:
+        '200':
+          description: API opérationnelle
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "API is running" }
+
+  # ══════════════════════════════════════════
+  # AUTH
+  # ══════════════════════════════════════════
+  /admin/login:
+    post:
+      summary: Connexion administrateur
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminLogin' }
+      responses:
+        '200':
+          description: Connexion réussie — tokens retournés
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          description: Email ou mot de passe invalide
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /admin/me:
+    get:
+      summary: Profil de l'administrateur connecté
+      tags: [Auth]
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Profil admin
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminProfile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/refresh:
+    post:
+      summary: Rafraîchir le token d'accès
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200':
+          description: Nouveau accessToken retourné
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/logout:
+    post:
+      summary: Déconnexion (révocation du refresh token)
+      tags: [Auth]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200':
+          description: Déconnexion réussie
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ══════════════════════════════════════════
+  # ROOMS
+  # ══════════════════════════════════════════
+  /api/rooms:
+    get:
+      summary: Lister toutes les salles
+      tags: [Rooms]
+      responses:
+        '200':
+          description: Liste des salles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Room' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    post:
+      summary: Créer une salle
+      tags: [Rooms]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoomInput' }
+      responses:
+        '201':
+          description: Salle créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Room Created" }
+                  room: { $ref: '#/components/schemas/Room' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/rooms/{id}:
+    delete:
+      summary: Supprimer une salle
+      tags: [Rooms]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Salle supprimée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Room deleted with id: ..." }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/rooms/{id}/sessions:
+    get:
+      summary: Sessions d'une salle (vue planning par salle)
+      tags: [Rooms]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Liste des sessions de la salle avec badge isLive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/SessionSummary' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  # ══════════════════════════════════════════
+  # EVENTS
+  # ══════════════════════════════════════════
+  /api/events:
+    get:
+      summary: Lister tous les événements
+      tags: [Events]
+      responses:
+        '200':
+          description: Liste des événements avec leurs sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EventWithSessions' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    post:
+      summary: Créer un ou plusieurs événements
+      tags: [Events]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/EventInput'
+                - type: array
+                  items: { $ref: '#/components/schemas/EventInput' }
+            examples:
+              single:
+                summary: Création simple
+                value:
+                  title: "DevSummit 2026"
+                  description: "Conférence annuelle"
+                  startDate: "2026-09-10T09:00:00.000Z"
+                  endDate: "2026-09-10T18:00:00.000Z"
+                  location: "Lyon"
+              multiple:
+                summary: Création en lot
+                value:
+                  - title: "Event A"
+                    description: "Desc A"
+                    startDate: "2026-09-10T09:00:00.000Z"
+                    endDate: "2026-09-10T18:00:00.000Z"
+                    location: "Paris"
+                  - title: "Event B"
+                    description: "Desc B"
+                    startDate: "2026-10-01T09:00:00.000Z"
+                    endDate: "2026-10-01T18:00:00.000Z"
+                    location: "Lyon"
+      responses:
+        '201':
+          description: Événement(s) créé(s)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EventWithSessions'
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      message: { type: string }
+                      count:   { type: integer }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/events/{id}:
+    get:
+      summary: Détail d'un événement avec ses sessions
+      tags: [Events]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Détail de l'événement
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventWithSessions' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    put:
+      summary: Modifier un événement
+      tags: [Events]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventInput' }
+      responses:
+        '200':
+          description: Événement mis à jour
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    delete:
+      summary: Supprimer un événement
+      tags: [Events]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Événement supprimé
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  # ══════════════════════════════════════════
+  # SESSIONS
+  # ══════════════════════════════════════════
+  /api/sessions:
+    post:
+      summary: Créer une session
+      description: |
+        Crée une session rattachée à un événement et une salle.
+        **Au moins un speaker est obligatoire.**
+      tags: [Sessions]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionInput' }
+            example:
+              eventId: "509fd64b-9b2d-420d-bc2a-cba22bd96563"
+              roomId: "d846f5d3-2468-4595-8186-6c52a6519454"
+              title: "Keynote IA"
+              description: "L'IA en 2026"
+              startTime: "2026-06-15T10:00:00.000Z"
+              endTime: "2026-06-15T11:30:00.000Z"
+              capacity: 250
+              speakerIds: ["9f89b59d-99ad-4399-9c51-d3bda313d4c4"]
+      responses:
+        '201':
+          description: Session créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Session created" }
+                  data: { $ref: '#/components/schemas/SessionSummary' }
+        '400':
+          description: Champ manquant ou aucun speaker fourni
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                missingField:
+                  value: { message: "All fields are required" }
+                noSpeaker:
+                  value: { message: "At least one speaker is required" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/sessions/{id}:
+    get:
+      summary: Détail complet d'une session
+      description: |
+        Retourne la session avec ses speakers, questions (triées par upvotes),
+        sa salle, son événement et le flag **isLive**.
+      tags: [Sessions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Détail de la session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/SessionDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    put:
+      summary: Modifier une session
+      description: |
+        Met à jour une session existante.
+        **Au moins un speaker est obligatoire.**
+        Le champ `speakerIds` remplace entièrement la liste des speakers.
+      tags: [Sessions]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionUpdateInput' }
+      responses:
+        '200':
+          description: Session mise à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Session updated" }
+                  data: { $ref: '#/components/schemas/SessionSummary' }
+        '400':
+          description: Champ manquant ou aucun speaker fourni
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    delete:
+      summary: Supprimer une session
+      tags: [Sessions]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Session supprimée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Session deleted" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  # ══════════════════════════════════════════
+  # SPEAKERS
+  # ══════════════════════════════════════════
+  /api/speakers:
+    get:
+      summary: Lister tous les intervenants
+      tags: [Speakers]
+      responses:
+        '200':
+          description: Liste des speakers triés par nom
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  count:   { type: integer }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Speaker' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    post:
+      summary: Créer un intervenant
+      tags: [Speakers]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SpeakerInput' }
+            example:
+              fullName: "Alice Johnson"
+              photoUrl: "https://i.pravatar.cc/150?img=1"
+              bio: "AI Expert & Researcher"
+              speakerLinks:
+                - platform: "linkedin"
+                  url: "https://linkedin.com/in/alice"
+                - platform: "github"
+                  url: "https://github.com/alice"
+      responses:
+        '201':
+          description: Intervenant créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/Speaker' }
+        '400':
+          description: fullName manquant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { success: false, message: "fullName est requis" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/speakers/{id}:
+    get:
+      summary: Détail d'un intervenant avec ses sessions
+      description: |
+        Page publique de l'intervenant.
+        Retourne ses sessions enrichies avec le flag **isLive** et les questions associées.
+      tags: [Speakers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Profil complet de l'intervenant
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/SpeakerWithSessions' }
+        '404':
+          description: Intervenant introuvable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { success: false, message: "Speaker introuvable" }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    put:
+      summary: Modifier un intervenant
+      description: |
+        Met à jour les informations d'un intervenant.
+        Le champ `links` remplace **entièrement** les liens existants.
+      tags: [Speakers]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SpeakerUpdateInput' }
+      responses:
+        '200':
+          description: Intervenant mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/Speaker' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    delete:
+      summary: Supprimer un intervenant
+      tags: [Speakers]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Intervenant supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string, example: "Intervenant supprimé avec succès" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  # ══════════════════════════════════════════
+  # QUESTIONS
+  # ══════════════════════════════════════════
+  /api/sessions/{sessionId}/questions:
+    get:
+      summary: Questions d'une session
+      description: Retourne les questions triées par upvotes décroissants puis par date de création.
+      tags: [Questions]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Liste des questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Question' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/questions:
+    post:
+      summary: Poser une question
+      description: |
+        Crée une question sur une session.
+        **La session doit être en cours (isLive = true).**
+        Le champ `authorName` est optionnel — la question peut être anonyme.
+      tags: [Questions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestionInput' }
+            examples:
+              avecNom:
+                summary: Question avec nom
+                value:
+                  content: "Est-ce que React 19 change la gestion du state ?"
+                  sessionId: "7c6162ec-37d9-4077-b993-b1a6d64d00a8"
+                  authorName: "Jean Dupont"
+              anonyme:
+                summary: Question anonyme
+                value:
+                  content: "Quels sont les prérequis pour cette session ?"
+                  sessionId: "7c6162ec-37d9-4077-b993-b1a6d64d00a8"
+      responses:
+        '201':
+          description: Question créée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+        '400':
+          description: Contenu vide, sessionId manquant ou session non live
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                contentVide:
+                  value: { error: "Le contenu de la question est requis" }
+                sessionIdManquant:
+                  value: { error: "sessionId est requis" }
+                sessionNonLive:
+                  value: { error: "Les questions ne peuvent être posées que pendant que la session est en cours (Live)" }
+        '404':
+          description: Session introuvable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "Session non trouvée" }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/questions/{id}/upvote:
+    post:
+      summary: Upvoter une question
+      description: |
+        Incrémente le compteur d'upvotes d'une question.
+        **La session associée doit être en cours (isLive = true).**
+        Pas de limite de votes dans cette version.
+      tags: [Questions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Upvote enregistré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Question' }
+        '400':
+          description: Session non live
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "Impossible d'upvoter après la fin de la session" }
+        '404':
+          description: Question introuvable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "Question introuvable" }
+        '500': { $ref: '#/components/responses/InternalError' }

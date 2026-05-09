@@ -378,52 +378,23 @@ export type EventMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type EventListRelationFilter = {
-  every?: Prisma.EventWhereInput
-  some?: Prisma.EventWhereInput
-  none?: Prisma.EventWhereInput
+export type EventScalarRelationFilter = {
+  is?: Prisma.EventWhereInput
+  isNot?: Prisma.EventWhereInput
 }
 
-export type EventOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
+export type EventCreateNestedOneWithoutSessionsInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutSessionsInput
+  connect?: Prisma.EventWhereUniqueInput
 }
 
-export type EventCreateNestedManyWithoutSessionsInput = {
-  create?: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput> | Prisma.EventCreateWithoutSessionsInput[] | Prisma.EventUncheckedCreateWithoutSessionsInput[]
-  connectOrCreate?: Prisma.EventCreateOrConnectWithoutSessionsInput | Prisma.EventCreateOrConnectWithoutSessionsInput[]
-  connect?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-}
-
-export type EventUncheckedCreateNestedManyWithoutSessionsInput = {
-  create?: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput> | Prisma.EventCreateWithoutSessionsInput[] | Prisma.EventUncheckedCreateWithoutSessionsInput[]
-  connectOrCreate?: Prisma.EventCreateOrConnectWithoutSessionsInput | Prisma.EventCreateOrConnectWithoutSessionsInput[]
-  connect?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-}
-
-export type EventUpdateManyWithoutSessionsNestedInput = {
-  create?: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput> | Prisma.EventCreateWithoutSessionsInput[] | Prisma.EventUncheckedCreateWithoutSessionsInput[]
-  connectOrCreate?: Prisma.EventCreateOrConnectWithoutSessionsInput | Prisma.EventCreateOrConnectWithoutSessionsInput[]
-  upsert?: Prisma.EventUpsertWithWhereUniqueWithoutSessionsInput | Prisma.EventUpsertWithWhereUniqueWithoutSessionsInput[]
-  set?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  disconnect?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  delete?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  connect?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  update?: Prisma.EventUpdateWithWhereUniqueWithoutSessionsInput | Prisma.EventUpdateWithWhereUniqueWithoutSessionsInput[]
-  updateMany?: Prisma.EventUpdateManyWithWhereWithoutSessionsInput | Prisma.EventUpdateManyWithWhereWithoutSessionsInput[]
-  deleteMany?: Prisma.EventScalarWhereInput | Prisma.EventScalarWhereInput[]
-}
-
-export type EventUncheckedUpdateManyWithoutSessionsNestedInput = {
-  create?: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput> | Prisma.EventCreateWithoutSessionsInput[] | Prisma.EventUncheckedCreateWithoutSessionsInput[]
-  connectOrCreate?: Prisma.EventCreateOrConnectWithoutSessionsInput | Prisma.EventCreateOrConnectWithoutSessionsInput[]
-  upsert?: Prisma.EventUpsertWithWhereUniqueWithoutSessionsInput | Prisma.EventUpsertWithWhereUniqueWithoutSessionsInput[]
-  set?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  disconnect?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  delete?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  connect?: Prisma.EventWhereUniqueInput | Prisma.EventWhereUniqueInput[]
-  update?: Prisma.EventUpdateWithWhereUniqueWithoutSessionsInput | Prisma.EventUpdateWithWhereUniqueWithoutSessionsInput[]
-  updateMany?: Prisma.EventUpdateManyWithWhereWithoutSessionsInput | Prisma.EventUpdateManyWithWhereWithoutSessionsInput[]
-  deleteMany?: Prisma.EventScalarWhereInput | Prisma.EventScalarWhereInput[]
+export type EventUpdateOneRequiredWithoutSessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutSessionsInput
+  upsert?: Prisma.EventUpsertWithoutSessionsInput
+  connect?: Prisma.EventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutSessionsInput, Prisma.EventUpdateWithoutSessionsInput>, Prisma.EventUncheckedUpdateWithoutSessionsInput>
 }
 
 export type EventCreateWithoutSessionsInput = {
@@ -453,34 +424,15 @@ export type EventCreateOrConnectWithoutSessionsInput = {
   create: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput>
 }
 
-export type EventUpsertWithWhereUniqueWithoutSessionsInput = {
-  where: Prisma.EventWhereUniqueInput
+export type EventUpsertWithoutSessionsInput = {
   update: Prisma.XOR<Prisma.EventUpdateWithoutSessionsInput, Prisma.EventUncheckedUpdateWithoutSessionsInput>
   create: Prisma.XOR<Prisma.EventCreateWithoutSessionsInput, Prisma.EventUncheckedCreateWithoutSessionsInput>
+  where?: Prisma.EventWhereInput
 }
 
-export type EventUpdateWithWhereUniqueWithoutSessionsInput = {
-  where: Prisma.EventWhereUniqueInput
+export type EventUpdateToOneWithWhereWithoutSessionsInput = {
+  where?: Prisma.EventWhereInput
   data: Prisma.XOR<Prisma.EventUpdateWithoutSessionsInput, Prisma.EventUncheckedUpdateWithoutSessionsInput>
-}
-
-export type EventUpdateManyWithWhereWithoutSessionsInput = {
-  where: Prisma.EventScalarWhereInput
-  data: Prisma.XOR<Prisma.EventUpdateManyMutationInput, Prisma.EventUncheckedUpdateManyWithoutSessionsInput>
-}
-
-export type EventScalarWhereInput = {
-  AND?: Prisma.EventScalarWhereInput | Prisma.EventScalarWhereInput[]
-  OR?: Prisma.EventScalarWhereInput[]
-  NOT?: Prisma.EventScalarWhereInput | Prisma.EventScalarWhereInput[]
-  id?: Prisma.StringFilter<"Event"> | string
-  title?: Prisma.StringFilter<"Event"> | string
-  description?: Prisma.StringFilter<"Event"> | string
-  startDate?: Prisma.DateTimeFilter<"Event"> | Date | string
-  endDate?: Prisma.DateTimeFilter<"Event"> | Date | string
-  location?: Prisma.StringFilter<"Event"> | string
-  createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"Event"> | Date | string
 }
 
 export type EventUpdateWithoutSessionsInput = {
@@ -495,17 +447,6 @@ export type EventUpdateWithoutSessionsInput = {
 }
 
 export type EventUncheckedUpdateWithoutSessionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
-  startDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  endDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  location?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type EventUncheckedUpdateManyWithoutSessionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
