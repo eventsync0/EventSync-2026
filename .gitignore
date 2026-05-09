@@ -14,7 +14,7 @@ pnpm-debug.log*
 
 # Prisma
 prisma/migrations/
-config/generated/prisma/
+src/config/generated/prisma/
 generated/
 .prisma/
 
