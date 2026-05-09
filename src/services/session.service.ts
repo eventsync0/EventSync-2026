@@ -50,7 +50,6 @@ export class SessionService {
         if (!speakerIds || speakerIds.length === 0) {
             throw new Error("At least one speaker is required");
         }
-
         return prisma.session.create({
             data: {
                 eventId,
