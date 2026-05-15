@@ -5,9 +5,9 @@ import { authMiddleware } from "../middlewares/admin.middleware";
 const router = Router();
 const roomController = new RoomController();
 
-router.post("/", /*authMiddleware,*/roomController.postRoom);
+router.post("/", authMiddleware,roomController.postRoom);
 router.get("/", roomController.getRooms);
-router.delete("/:id", /*authMiddleware,*/roomController.deleteRoom);
+router.delete("/:id", authMiddleware,roomController.deleteRoom);
 router.get("/:id/sessions", roomController.getRoomSessions);
 
 export default router;
