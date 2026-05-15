@@ -26,6 +26,12 @@ export class SessionController {
   getSessionById = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = req.params.id as string;
+
+      if (!id) {
+        res.status(400).json({ error: "Session ID is required" });
+        return;
+      }
+
       const session = await this.sessionService.getSessionById(id);
 
       if (!session) {
@@ -34,9 +40,9 @@ export class SessionController {
       }
 
       res.status(200).json({ data: session });
-    } catch (error) {
+    } catch (error: any) {
       console.error("GET SESSION BY ID ERROR:", error);
-      res.status(500).json({ error: "Server error" });
+      res.status(500).json({ error: "Server error", details: error.message });
     }
   };
 
