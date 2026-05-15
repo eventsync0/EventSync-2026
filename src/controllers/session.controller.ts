@@ -77,6 +77,36 @@ export class SessionController {
         return;
       }
 
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      const startHour = start.getUTCHours();
+      const startMinute = start.getUTCMinutes();
+      const endHour = end.getUTCHours();
+      const endMinute = end.getUTCMinutes();
+      console.log("🔍 VALIDATION:", { startHour, startMinute, endHour, endMinute, startTime, endTime });
+
+
+      if (startHour < 7 || startHour > 19 || (startHour === 19 && startMinute > 59)) {
+        res.status(400).json({
+          message: "Session must start between 7:00 and 19:59"
+        });
+        return;
+      }
+
+      if (endHour < 7 || endHour >= 20) { 
+        res.status(400).json({
+          message: "Session must end between 7:00 and 20:00 (20:00 excluded)"
+        });
+        return;
+      }
+
+      if (start >= end) {
+        res.status(400).json({
+          message: "Start time must be before end time"
+        });
+        return;
+      }
+
       const room = await this.roomService.getRoomById(roomId);
       if (!room) {
         res.status(400).json({ message: "Room does not exist" });
@@ -146,12 +176,36 @@ export class SessionController {
         return;
       }
 
-      if (
-        !speakerIds ||
-        !Array.isArray(speakerIds) ||
-        speakerIds.length === 0
-      ) {
+      if (!speakerIds || !Array.isArray(speakerIds) || speakerIds.length === 0) {
         res.status(400).json({ message: "At least one speaker is required" });
+        return;
+      }
+
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      const startHour = start.getUTCHours();
+      const startMinute = start.getUTCMinutes();
+      const endHour = end.getUTCHours();
+      const endMinute = end.getUTCMinutes();
+
+      if (startHour < 7 || startHour > 19 || (startHour === 19 && startMinute > 59)) {
+        res.status(400).json({
+          message: "Session must start between 7:00 and 19:59"
+        });
+        return;
+      }
+
+      if (endHour < 7 || endHour > 20 || (endHour === 20 && endMinute > 0)) {
+        res.status(400).json({
+          message: "Session must end between 7:00 and 20:00 (20:00 excluded)"
+        });
+        return;
+      }
+
+      if (start >= end) {
+        res.status(400).json({
+          message: "Start time must be before end time"
+        });
         return;
       }
 
