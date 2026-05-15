@@ -107,8 +107,26 @@ export class SessionService {
     }
 
     async deleteSession(id: string) {
-        return prisma.session.delete({
-            where: { id }
-        });
+        try {
+            await prisma.session.update({
+                where: { id },
+                data: {
+                    speakers: {
+                        set: []
+                    }
+                }
+            });
+
+            await prisma.question.deleteMany({
+                where: { sessionId: id }
+            });
+
+            return await prisma.session.delete({
+                where: { id }
+            });
+        } catch (error) {
+            console.error("Delete session error:", error);
+            throw error;
+        }
     }
 }
