@@ -21,7 +21,7 @@ export class RoomService {
         return prisma.room.delete({ where: { id } })
     }
 
-    async getRoomSessions(id: string) {
+    async getRoomById(id: string) {
         const sessions = await prisma.session.findMany({
             where: { roomId: id },
             include: { room: true },

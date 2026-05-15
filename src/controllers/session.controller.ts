@@ -1,10 +1,17 @@
 import { SessionService } from "../services/session.service";
+import { RoomService } from "../services/room.service";
+import { EventService } from "../services/event.service";
 import { Response, Request } from "express";
 
 export class SessionController {
   private sessionService: SessionService;
+  private roomService: RoomService;
+  private eventService: EventService;
+
   constructor() {
     this.sessionService = new SessionService();
+    this.roomService = new RoomService();
+    this.eventService = new EventService();
   }
 
   getSessions = async (_req: Request, res: Response): Promise<void> => {
@@ -59,12 +66,20 @@ export class SessionController {
         return;
       }
 
-      if (
-        !speakerIds ||
-        !Array.isArray(speakerIds) ||
-        speakerIds.length === 0
-      ) {
+      if (!speakerIds || !Array.isArray(speakerIds) || speakerIds.length === 0) {
         res.status(400).json({ message: "At least one speaker is required" });
+        return;
+      }
+
+      const room = await this.roomService.getRoomById(roomId);
+      if (!room) {
+        res.status(400).json({ message: "Room does not exist" });
+        return;
+      }
+
+      const event = await EventService.getEventById(eventId);
+      if (!event) {
+        res.status(400).json({ message: "Event does not exist" });
         return;
       }
 
@@ -85,7 +100,12 @@ export class SessionController {
         res.status(400).json({ message: error.message });
         return;
       }
-    res.status(500).json({ message: "Internal server error" });
+      if (error.message === "One or more speakers do not exist") {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
     }
   };
 
@@ -150,6 +170,7 @@ export class SessionController {
       res.status(500).json({ message: "Internal server error" });
     }
   };
+
   deleteSession = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params as { id: string };
