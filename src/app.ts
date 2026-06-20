@@ -10,11 +10,15 @@ import speakerRoutes from './routes/speaker.route'
 import questionRoutes from './routes/questions.routes'
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
-
+const allowedOrigins = FRONTEND_URL.split(',').map(origin => origin.trim());
 export const createApp = () => {
     const app = express()
 
-    app.use(cors({ origin: FRONTEND_URL }))
+    app.use(cors({ 
+        origin: allowedOrigins,
+        credentials: true,
+        exposedHeaders: ['X-Total-Count']
+    }))
     app.use(express.json())
 
     app.get('/api/health', (_req, res) => {

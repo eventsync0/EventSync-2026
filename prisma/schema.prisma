@@ -29,12 +29,29 @@ model Event {
   id          String       @id @default(uuid())
   title       String
   description String
+  category    EventCategory @default(OTHER)
   startDate   DateTime
   endDate     DateTime
   location    String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   sessions    Session[]
+}
+
+enum EventCategory {
+  CONFERENCE
+  WORKSHOP
+  SEMINAR
+  MEETUP
+  WEBINAR
+  SOCIAL
+  FUNDRAISER
+  SPORTS
+  ARTS
+  TECHNOLOGY
+  BUSINESS
+  EDUCATION
+  OTHER
 }
 
 model Room {

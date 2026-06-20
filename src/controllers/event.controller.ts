@@ -1,29 +1,117 @@
+// controllers/event.controller.ts
 import { Request, Response } from 'express';
 import { EventService } from '../services/event.service';
+import { EventCategory } from '../config/generated/prisma/enums';
 
 export class EventController {
-   
-
-    getEvents = async (_req: Request, res: Response): Promise<void> => {
+    // Récupérer tous les événements avec filtres optionnels
+    getEvents = async (req: Request, res: Response): Promise<void> => {
         try {
-            const events = await EventService.getEvents();
-            res.status(200).json(events);
+            const { category, search, startDate, endDate, upcoming, past } = req.query;
+
+            // Construire les filtres
+            const filters: any = {};
+
+            // Filtre par catégorie
+            if (category && Object.values(EventCategory).includes(category as EventCategory)) {
+                filters.category = category as EventCategory;
+            } else if (category) {
+                res.status(400).json({ 
+                    error: "Invalid category. Must be one of: " + Object.values(EventCategory).join(', ')
+                });
+                return;
+            }
+
+            // Filtre par recherche
+            if (search) {
+                filters.search = search as string;
+            }
+
+            // Filtre par date
+            if (startDate) {
+                const start = new Date(startDate as string);
+                if (isNaN(start.getTime())) {
+                    res.status(400).json({ error: "Invalid startDate format" });
+                    return;
+                }
+                filters.startDate = start;
+            }
+
+            if (endDate) {
+                const end = new Date(endDate as string);
+                if (isNaN(end.getTime())) {
+                    res.status(400).json({ error: "Invalid endDate format" });
+                    return;
+                }
+                filters.endDate = end;
+            }
+
+            let events;
+            let metadata = {};
+
+            // Utiliser les méthodes spécialisées selon les paramètres
+            if (upcoming === 'true') {
+                events = await EventService.getUpcomingEvents();
+                metadata = { type: 'upcoming' };
+            } else if (past === 'true') {
+                events = await EventService.getPastEvents();
+                metadata = { type: 'past' };
+            } else if (category && !search && !startDate && !endDate) {
+                // Si seule la catégorie est filtrée
+                events = await EventService.getEventsByCategory(category as EventCategory);
+                metadata = { category };
+            } else if (Object.keys(filters).length > 0) {
+                events = await EventService.getEventsWithFilters(filters);
+                metadata = { filters };
+            } else {
+                events = await EventService.getEvents();
+            }
+
+            // Ajouter des informations sur le nombre de participants (simulé ou à ajouter plus tard)
+            const eventsWithAttendees = events.map(event => ({
+                ...event,
+                attendees: Math.floor(Math.random() * 100) + 10 // À remplacer par une vraie logique
+            }));
+
+            res.status(200).json({
+                success: true,
+                data: eventsWithAttendees,
+                count: eventsWithAttendees.length,
+                ...metadata
+            });
         } catch (error) {
-            res.status(500).json({ error: "Failed to retrieve events" });
+            console.error('Error in getEvents:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to retrieve events" 
+            });
         }
     }
 
     getEventById = async (req: Request, res: Response): Promise<void> => {
         try {
-            const  id  = req.params.id as string;
-            const event = await EventService.getEventById(id); 
+            const id = req.params.id as string;
+            const event = await EventService.getEventById(id);
+            
             if (!event) {
                 res.status(404).json({ error: "Event not found" });
                 return;
             }
-            res.status(200).json(event);
+
+            // Ajouter un nombre de participants simulé
+            const eventWithAttendees = {
+                ...event,
+                attendees: Math.floor(Math.random() * 100) + 10
+            };
+
+            res.status(200).json({
+                success: true,
+                data: eventWithAttendees
+            });
         } catch (error) {
-            res.status(500).json({ error: "Failed to retrieve event" });
+            console.error('Error in getEventById:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to retrieve event" 
+            });
         }
     }
 
@@ -35,17 +123,28 @@ export class EventController {
             const events = isArray ? data : [data];
             
             if (events.length === 0) {
-                res.status(400).json({ error: "At least one event is required" });
+                res.status(400).json({ 
+                    error: "At least one event is required" 
+                });
                 return;
             }
             
-          
+            // Valider chaque événement
             const invalidEvents: Array<{ index: number; missingFields: string[] }> = [];
+            const invalidCategories: Array<{ index: number; category: string }> = [];
             
             events.forEach((event, index) => {
                 const missingFields = [];
                 if (!event.title) missingFields.push('title');
                 if (!event.description) missingFields.push('description');
+                if (!event.category) {
+                    missingFields.push('category');
+                } else if (!Object.values(EventCategory).includes(event.category)) {
+                    invalidCategories.push({ 
+                        index, 
+                        category: event.category 
+                    });
+                }
                 if (!event.startDate) missingFields.push('startDate');
                 if (!event.endDate) missingFields.push('endDate');
                 if (!event.location) missingFields.push('location');
@@ -55,6 +154,19 @@ export class EventController {
                 }
             });
             
+            // Gérer les erreurs de validation
+            if (invalidCategories.length > 0) {
+                res.status(400).json({
+                    error: "Invalid category provided",
+                    details: invalidCategories.map(item => ({
+                        index: item.index,
+                        category: item.category,
+                        validCategories: Object.values(EventCategory)
+                    }))
+                });
+                return;
+            }
+
             if (invalidEvents.length > 0) {
                 res.status(400).json({
                     error: "Some events are missing required fields",
@@ -63,25 +175,75 @@ export class EventController {
                 return;
             }
             
-            const formattedEvents = events.map(event => ({
-                title: event.title,
-                description: event.description,
-                startDate: new Date(event.startDate),
-                endDate: new Date(event.endDate),
-                location: event.location
-            }));
+            // Valider les dates
+            const dateErrors: Array<{ index: number; error: string }> = [];
+            const formattedEvents = events.map((event, index) => {
+                const startDate = new Date(event.startDate);
+                const endDate = new Date(event.endDate);
+
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    dateErrors.push({ 
+                        index, 
+                        error: "Invalid date format" 
+                    });
+                    return null;
+                }
+
+                if (startDate >= endDate) {
+                    dateErrors.push({ 
+                        index, 
+                        error: "Start date must be before end date" 
+                    });
+                    return null;
+                }
+
+                return {
+                    title: event.title,
+                    description: event.description,
+                    category: event.category,
+                    startDate,
+                    endDate,
+                    location: event.location
+                };
+            });
+
+            if (dateErrors.length > 0) {
+                res.status(400).json({
+                    error: "Invalid dates provided",
+                    details: dateErrors
+                });
+                return;
+            }
+
+            const validEvents = formattedEvents.filter(e => e !== null);
             
-            const result = await EventService.createEvents(formattedEvents);
+            if (validEvents.length === 0) {
+                res.status(400).json({ 
+                    error: "No valid events to create" 
+                });
+                return;
+            }
+            
+            const result = await EventService.createEvents(validEvents);
+            
+            // Récupérer les événements créés
+            const createdEvents = await Promise.all(
+                result.createdIds.map(id => EventService.getEventById(id))
+            );
             
             if (isArray) {
                 res.status(201).json({
                     success: true,
                     message: `${result.count} events created successfully`,
-                    count: result.count
+                    count: result.count,
+                    data: createdEvents
                 });
             } else {
-                const createdEvent = await EventService.getEventById(result.createdIds?.[0]);
-                res.status(201).json(createdEvent);
+                res.status(201).json({
+                    success: true,
+                    message: "Event created successfully",
+                    data: createdEvents[0]
+                });
             }
             
         } catch (error) {
@@ -91,28 +253,195 @@ export class EventController {
             });
         }
     }
+
     updateEvent = async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params as { id: string };
-            const { title, description, startDate, endDate, location } = req.body;
-            if (!title || !description || !startDate || !endDate || !location) {
-                res.status(400).json({ error: "All fields are required" });
+            const { title, description, category, startDate, endDate, location } = req.body;
+
+            // Vérifier si l'événement existe
+            const existingEvent = await EventService.getEventById(id);
+            if (!existingEvent) {
+                res.status(404).json({ error: "Event not found" });
                 return;
             }
-            const event = await EventService.updateEvent(id, { title, description, startDate, endDate, location });
-            res.status(200).json(event);
+
+            // Valider la catégorie si elle est fournie
+            if (category && !Object.values(EventCategory).includes(category)) {
+                res.status(400).json({
+                    error: "Invalid category. Must be one of: " + Object.values(EventCategory).join(', ')
+                });
+                return;
+            }
+
+            // Valider les dates si elles sont fournies
+            let start, end;
+            if (startDate) {
+                start = new Date(startDate);
+                if (isNaN(start.getTime())) {
+                    res.status(400).json({ error: "Invalid start date format" });
+                    return;
+                }
+            }
+
+            if (endDate) {
+                end = new Date(endDate);
+                if (isNaN(end.getTime())) {
+                    res.status(400).json({ error: "Invalid end date format" });
+                    return;
+                }
+            }
+
+            // Si les deux dates sont fournies, vérifier la cohérence
+            if (start && end && start >= end) {
+                res.status(400).json({ 
+                    error: "Start date must be before end date" 
+                });
+                return;
+            }
+
+            // Construire les données de mise à jour
+            const updateData: any = {};
+            if (title !== undefined) updateData.title = title;
+            if (description !== undefined) updateData.description = description;
+            if (category !== undefined) updateData.category = category;
+            if (start !== undefined) updateData.startDate = start;
+            if (end !== undefined) updateData.endDate = end;
+            if (location !== undefined) updateData.location = location;
+
+            // Vérifier qu'au moins un champ est fourni
+            if (Object.keys(updateData).length === 0) {
+                res.status(400).json({ 
+                    error: "At least one field must be provided for update" 
+                });
+                return;
+            }
+
+            const updatedEvent = await EventService.updateEvent(id, updateData);
+
+            res.status(200).json({
+                success: true,
+                message: "Event updated successfully",
+                data: updatedEvent
+            });
         } catch (error) {
-            res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update event" });
+            console.error('Error in updateEvent:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to update event" 
+            });
         }
     }
 
     deleteEvent = async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params as { id: string };
+
+            // Vérifier si l'événement existe
+            const existingEvent = await EventService.getEventById(id);
+            if (!existingEvent) {
+                res.status(404).json({ error: "Event not found" });
+                return;
+            }
+
             await EventService.deleteEvent(id);
-            res.status(204).send();
+            
+            res.status(200).json({
+                success: true,
+                message: "Event deleted successfully"
+            });
         } catch (error) {
-            res.status(500).json({ error: error instanceof Error ? error.message : "Failed to delete event" });
+            console.error('Error in deleteEvent:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to delete event" 
+            });
+        }
+    }
+
+    // Méthodes additionnelles
+
+    getEventsByCategory = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { category } = req.params;
+
+            if (!Object.values(EventCategory).includes(category as EventCategory)) {
+                res.status(400).json({
+                    error: "Invalid category. Must be one of: " + Object.values(EventCategory).join(', ')
+                });
+                return;
+            }
+
+            const events = await EventService.getEventsByCategory(category as EventCategory);
+
+            res.status(200).json({
+                success: true,
+                data: events,
+                count: events.length,
+                category
+            });
+        } catch (error) {
+            console.error('Error in getEventsByCategory:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to retrieve events by category" 
+            });
+        }
+    }
+
+    getEventsStatistics = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const totalEvents = await EventService.getEvents();
+            const now = new Date();
+            
+            const upcomingEvents = totalEvents.filter(event => 
+                new Date(event.startDate) >= now
+            );
+            
+            const pastEvents = totalEvents.filter(event => 
+                new Date(event.endDate) < now
+            );
+
+            const categories = await EventService.getEventsCountByCategory();
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    total: totalEvents.length,
+                    upcoming: upcomingEvents.length,
+                    past: pastEvents.length,
+                    byCategory: categories
+                }
+            });
+        } catch (error) {
+            console.error('Error in getEventsStatistics:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to retrieve statistics" 
+            });
+        }
+    }
+
+    searchEvents = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { q } = req.query;
+
+            if (!q || typeof q !== 'string' || q.trim().length === 0) {
+                res.status(400).json({ 
+                    error: "Search query is required" 
+                });
+                return;
+            }
+
+            const events = await EventService.searchEvents(q.trim());
+
+            res.status(200).json({
+                success: true,
+                data: events,
+                count: events.length,
+                searchTerm: q
+            });
+        } catch (error) {
+            console.error('Error in searchEvents:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to search events" 
+            });
         }
     }
 }
