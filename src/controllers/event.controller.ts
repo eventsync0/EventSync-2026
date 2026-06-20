@@ -4,15 +4,13 @@ import { EventService } from '../services/event.service';
 import { EventCategory } from '../config/generated/prisma/enums';
 
 export class EventController {
-    // Récupérer tous les événements avec filtres optionnels
+
     getEvents = async (req: Request, res: Response): Promise<void> => {
         try {
             const { category, search, startDate, endDate, upcoming, past } = req.query;
 
-            // Construire les filtres
             const filters: any = {};
 
-            // Filtre par catégorie
             if (category && Object.values(EventCategory).includes(category as EventCategory)) {
                 filters.category = category as EventCategory;
             } else if (category) {
@@ -22,12 +20,10 @@ export class EventController {
                 return;
             }
 
-            // Filtre par recherche
             if (search) {
                 filters.search = search as string;
             }
 
-            // Filtre par date
             if (startDate) {
                 const start = new Date(startDate as string);
                 if (isNaN(start.getTime())) {
@@ -49,7 +45,6 @@ export class EventController {
             let events;
             let metadata = {};
 
-            // Utiliser les méthodes spécialisées selon les paramètres
             if (upcoming === 'true') {
                 events = await EventService.getUpcomingEvents();
                 metadata = { type: 'upcoming' };
@@ -57,7 +52,7 @@ export class EventController {
                 events = await EventService.getPastEvents();
                 metadata = { type: 'past' };
             } else if (category && !search && !startDate && !endDate) {
-                // Si seule la catégorie est filtrée
+              
                 events = await EventService.getEventsByCategory(category as EventCategory);
                 metadata = { category };
             } else if (Object.keys(filters).length > 0) {
@@ -67,10 +62,9 @@ export class EventController {
                 events = await EventService.getEvents();
             }
 
-            // Ajouter des informations sur le nombre de participants (simulé ou à ajouter plus tard)
             const eventsWithAttendees = events.map(event => ({
                 ...event,
-                attendees: Math.floor(Math.random() * 100) + 10 // À remplacer par une vraie logique
+                attendees: Math.floor(Math.random() * 100) + 10 
             }));
 
             res.status(200).json({
@@ -97,7 +91,6 @@ export class EventController {
                 return;
             }
 
-            // Ajouter un nombre de participants simulé
             const eventWithAttendees = {
                 ...event,
                 attendees: Math.floor(Math.random() * 100) + 10
@@ -129,7 +122,6 @@ export class EventController {
                 return;
             }
             
-            // Valider chaque événement
             const invalidEvents: Array<{ index: number; missingFields: string[] }> = [];
             const invalidCategories: Array<{ index: number; category: string }> = [];
             
@@ -154,7 +146,6 @@ export class EventController {
                 }
             });
             
-            // Gérer les erreurs de validation
             if (invalidCategories.length > 0) {
                 res.status(400).json({
                     error: "Invalid category provided",
@@ -175,7 +166,6 @@ export class EventController {
                 return;
             }
             
-            // Valider les dates
             const dateErrors: Array<{ index: number; error: string }> = [];
             const formattedEvents = events.map((event, index) => {
                 const startDate = new Date(event.startDate);
@@ -226,7 +216,6 @@ export class EventController {
             
             const result = await EventService.createEvents(validEvents);
             
-            // Récupérer les événements créés
             const createdEvents = await Promise.all(
                 result.createdIds.map(id => EventService.getEventById(id))
             );
@@ -259,14 +248,12 @@ export class EventController {
             const { id } = req.params as { id: string };
             const { title, description, category, startDate, endDate, location } = req.body;
 
-            // Vérifier si l'événement existe
             const existingEvent = await EventService.getEventById(id);
             if (!existingEvent) {
                 res.status(404).json({ error: "Event not found" });
                 return;
             }
 
-            // Valider la catégorie si elle est fournie
             if (category && !Object.values(EventCategory).includes(category)) {
                 res.status(400).json({
                     error: "Invalid category. Must be one of: " + Object.values(EventCategory).join(', ')
@@ -274,7 +261,6 @@ export class EventController {
                 return;
             }
 
-            // Valider les dates si elles sont fournies
             let start, end;
             if (startDate) {
                 start = new Date(startDate);
@@ -292,7 +278,6 @@ export class EventController {
                 }
             }
 
-            // Si les deux dates sont fournies, vérifier la cohérence
             if (start && end && start >= end) {
                 res.status(400).json({ 
                     error: "Start date must be before end date" 
@@ -300,7 +285,6 @@ export class EventController {
                 return;
             }
 
-            // Construire les données de mise à jour
             const updateData: any = {};
             if (title !== undefined) updateData.title = title;
             if (description !== undefined) updateData.description = description;
@@ -309,7 +293,6 @@ export class EventController {
             if (end !== undefined) updateData.endDate = end;
             if (location !== undefined) updateData.location = location;
 
-            // Vérifier qu'au moins un champ est fourni
             if (Object.keys(updateData).length === 0) {
                 res.status(400).json({ 
                     error: "At least one field must be provided for update" 
@@ -336,7 +319,6 @@ export class EventController {
         try {
             const { id } = req.params as { id: string };
 
-            // Vérifier si l'événement existe
             const existingEvent = await EventService.getEventById(id);
             if (!existingEvent) {
                 res.status(404).json({ error: "Event not found" });
@@ -356,8 +338,6 @@ export class EventController {
             });
         }
     }
-
-    // Méthodes additionnelles
 
     getEventsByCategory = async (req: Request, res: Response): Promise<void> => {
         try {
