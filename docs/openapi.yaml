@@ -15,10 +15,13 @@ info:
     - Une session possède **au moins un** intervenant
     - Les questions ne peuvent être créées que lorsque la session est **live**
     - Les favoris sont gérés côté navigateur (localStorage)
+    - Chaque événement possède une **catégorie** obligatoire
 
 servers:
   - url: http://localhost:3001
     description: Serveur de développement
+  - url: https://api.eventsync.com
+    description: Serveur de production
 
 tags:
   - name: Auth
@@ -35,6 +38,8 @@ tags:
     description: Questions et upvotes en temps réel (public)
   - name: Health
     description: Santé de l'API
+  - name: Statistics
+    description: Statistiques et analyses
 
 # ─────────────────────────────────────────────
 # COMPONENTS
@@ -54,6 +59,7 @@ components:
       properties:
         error:   { type: string, example: "Message d'erreur" }
         message: { type: string, example: "Message d'erreur alternatif" }
+        details: { type: array, items: { type: object } }
 
     # ── Auth ──
     AdminLogin:
@@ -84,6 +90,39 @@ components:
         email:     { type: string, format: email }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    # ── EventCategory ──
+    EventCategory:
+      type: string
+      enum:
+        - CONFERENCE
+        - WORKSHOP
+        - SEMINAR
+        - MEETUP
+        - WEBINAR
+        - SOCIAL
+        - FUNDRAISER
+        - SPORTS
+        - ARTS
+        - TECHNOLOGY
+        - BUSINESS
+        - EDUCATION
+        - OTHER
+      description: |
+        Catégories d'événements disponibles:
+        - CONFERENCE: Conférence académique ou professionnelle
+        - WORKSHOP: Atelier pratique
+        - SEMINAR: Séminaire
+        - MEETUP: Rencontre informelle
+        - WEBINAR: Webinaire en ligne
+        - SOCIAL: Événement social
+        - FUNDRAISER: Collecte de fonds
+        - SPORTS: Événement sportif
+        - ARTS: Arts et culture
+        - TECHNOLOGY: Technologie
+        - BUSINESS: Affaires
+        - EDUCATION: Éducation
+        - OTHER: Autre
 
     # ── Room ──
     Room:
@@ -241,9 +280,11 @@ components:
         id:          { type: string, format: uuid }
         title:       { type: string, example: "Conférence Tech 2026" }
         description: { type: string, example: "IA + Web + Mobile" }
+        category:    { $ref: '#/components/schemas/EventCategory' }
         startDate:   { type: string, format: date-time }
         endDate:     { type: string, format: date-time }
         location:    { type: string, example: "Paris" }
+        attendees:   { type: integer, example: 42 }
         createdAt:   { type: string, format: date-time }
         updatedAt:   { type: string, format: date-time }
 
@@ -258,13 +299,41 @@ components:
 
     EventInput:
       type: object
-      required: [title, description, startDate, endDate, location]
+      required: [title, description, category, startDate, endDate, location]
       properties:
         title:       { type: string, example: "DevSummit 2026" }
         description: { type: string, example: "Conférence annuelle des développeurs" }
+        category:    { $ref: '#/components/schemas/EventCategory' }
         startDate:   { type: string, format: date-time, example: "2026-09-10T09:00:00.000Z" }
         endDate:     { type: string, format: date-time, example: "2026-09-10T18:00:00.000Z" }
         location:    { type: string, example: "Lyon" }
+
+    EventFilters:
+      type: object
+      properties:
+        category:   { $ref: '#/components/schemas/EventCategory' }
+        search:     { type: string, description: "Recherche dans le titre, la description et la catégorie" }
+        startDate:  { type: string, format: date-time }
+        endDate:    { type: string, format: date-time }
+        upcoming:   { type: boolean, description: "Filtrer les événements à venir" }
+        past:       { type: boolean, description: "Filtrer les événements passés" }
+
+    # ── Statistics ──
+    CategoryStatistics:
+      type: object
+      properties:
+        category: { $ref: '#/components/schemas/EventCategory' }
+        count:    { type: integer }
+
+    EventStatistics:
+      type: object
+      properties:
+        total:      { type: integer }
+        upcoming:   { type: integer }
+        past:       { type: integer }
+        byCategory:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryStatistics' }
 
   # ── Réponses réutilisables ──
   responses:
@@ -477,20 +546,67 @@ paths:
   # ══════════════════════════════════════════
   /api/events:
     get:
-      summary: Lister tous les événements
+      summary: Lister tous les événements avec filtres optionnels
+      description: |
+        Récupère la liste des événements. Des filtres peuvent être appliqués :
+        - Par catégorie
+        - Par recherche (titre, description, catégorie)
+        - Par période (upcoming, past)
+        - Par date spécifique
       tags: [Events]
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/EventCategory' }
+          description: Filtrer par catégorie
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+          description: Recherche dans le titre, la description et la catégorie
+        - name: startDate
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: Date de début pour le filtrage
+        - name: endDate
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: Date de fin pour le filtrage
+        - name: upcoming
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: Filtrer les événements à venir
+        - name: past
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: Filtrer les événements passés
       responses:
         '200':
           description: Liste des événements avec leurs sessions
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/EventWithSessions' }
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/EventWithSessions' }
+                  count: { type: integer }
+                  filters: { $ref: '#/components/schemas/EventFilters' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/InternalError' }
 
     post:
       summary: Créer un ou plusieurs événements
+      description: |
+        Crée un ou plusieurs événements. 
+        **La catégorie est obligatoire** et doit être une valeur valide de l'énumération.
       tags: [Events]
       security: [{ BearerAuth: [] }]
       requestBody:
@@ -507,23 +623,26 @@ paths:
                 summary: Création simple
                 value:
                   title: "DevSummit 2026"
-                  description: "Conférence annuelle"
+                  description: "Conférence annuelle des développeurs"
+                  category: "TECHNOLOGY"
                   startDate: "2026-09-10T09:00:00.000Z"
                   endDate: "2026-09-10T18:00:00.000Z"
                   location: "Lyon"
               multiple:
                 summary: Création en lot
                 value:
-                  - title: "Event A"
-                    description: "Desc A"
+                  - title: "Tech Conference"
+                    description: "Conférence tech"
+                    category: "TECHNOLOGY"
                     startDate: "2026-09-10T09:00:00.000Z"
                     endDate: "2026-09-10T18:00:00.000Z"
                     location: "Paris"
-                  - title: "Event B"
-                    description: "Desc B"
-                    startDate: "2026-10-01T09:00:00.000Z"
-                    endDate: "2026-10-01T18:00:00.000Z"
-                    location: "Lyon"
+                  - title: "Music Festival"
+                    description: "Festival de musique"
+                    category: "ARTS"
+                    startDate: "2026-07-20T12:00:00.000Z"
+                    endDate: "2026-07-22T23:00:00.000Z"
+                    location: "Central Park"
       responses:
         '201':
           description: Événement(s) créé(s)
@@ -537,7 +656,19 @@ paths:
                       success: { type: boolean }
                       message: { type: string }
                       count:   { type: integer }
-        '400': { $ref: '#/components/responses/BadRequest' }
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Event' }
+        '400': 
+          description: Données invalides ou catégorie manquante
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                missingCategory:
+                  value: { error: "Category is required" }
+                invalidCategory:
+                  value: { error: "Invalid category. Must be one of: CONFERENCE, WORKSHOP, ..." }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '500': { $ref: '#/components/responses/InternalError' }
 
@@ -555,12 +686,19 @@ paths:
           description: Détail de l'événement
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/EventWithSessions' }
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/EventWithSessions' }
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/InternalError' }
 
     put:
       summary: Modifier un événement
+      description: |
+        Met à jour un événement existant.
+        Tous les champs sont optionnels pour permettre des mises à jour partielles.
       tags: [Events]
       security: [{ BearerAuth: [] }]
       parameters:
@@ -572,15 +710,28 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/EventInput' }
+            schema:
+              type: object
+              properties:
+                title:       { type: string }
+                description: { type: string }
+                category:    { $ref: '#/components/schemas/EventCategory' }
+                startDate:   { type: string, format: date-time }
+                endDate:     { type: string, format: date-time }
+                location:    { type: string }
       responses:
         '200':
           description: Événement mis à jour
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Event' }
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/Event' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/InternalError' }
 
     delete:
@@ -593,9 +744,109 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        '204':
+        '200':
           description: Événement supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  # ══════════════════════════════════════════
+  # EVENTS - STATISTIQUES ET RECHERCHE
+  # ══════════════════════════════════════════
+  /api/events/statistics:
+    get:
+      summary: Statistiques des événements
+      description: |
+        Retourne des statistiques sur les événements :
+        - Nombre total
+        - Événements à venir
+        - Événements passés
+        - Répartition par catégorie
+      tags: [Statistics]
+      responses:
+        '200':
+          description: Statistiques des événements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/EventStatistics' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/events/search:
+    get:
+      summary: Recherche avancée d'événements
+      description: |
+        Recherche des événements par mot-clé dans :
+        - Le titre
+        - La description
+        - La catégorie
+      tags: [Events]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+          description: Terme de recherche
+      responses:
+        '200':
+          description: Résultats de la recherche
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/EventWithSessions' }
+                  count: { type: integer }
+                  searchTerm: { type: string }
+        '400':
+          description: Terme de recherche manquant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "Search query is required" }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/events/category/{category}:
+    get:
+      summary: Événements par catégorie
+      tags: [Events]
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/EventCategory' }
+      responses:
+        '200':
+          description: Liste des événements de la catégorie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/EventWithSessions' }
+                  count: { type: integer }
+                  category: { $ref: '#/components/schemas/EventCategory' }
+        '400':
+          description: Catégorie invalide
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '500': { $ref: '#/components/responses/InternalError' }
 
   # ══════════════════════════════════════════
@@ -704,6 +955,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/InternalError' }
 
     delete:
@@ -725,6 +977,7 @@ paths:
                 properties:
                   message: { type: string, example: "Session deleted" }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/InternalError' }
 
   # ══════════════════════════════════════════

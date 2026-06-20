@@ -1,22 +1,22 @@
 {
   "info": {
-    "name": "EventSync-2026 — Collection Complète",
-    "description": "Collection complète pour tester le backend EventSync. Les tokens et IDs sont sauvegardés automatiquement via les scripts de test.",
-    "_postman_id": "eventsync-2026-full",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "name": "EventSync-2026 — Collection Complète avec Catégories",
+    "description": "Collection complète pour tester le backend EventSync avec les nouvelles fonctionnalités de catégorie et filtrage.",
+    "_postman_id": "eventsync-2026-full-categories",
+    "schema": "https://schema.getpostman.com/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url",     "value": "http://localhost:3001", "type": "string" },
-    { "key": "accessToken",  "value": "", "type": "string" },
+    { "key": "base_url", "value": "http://localhost:3001", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
     { "key": "refreshToken", "value": "", "type": "string" },
-    { "key": "eventId",      "value": "", "type": "string" },
-    { "key": "sessionId",    "value": "", "type": "string" },
-    { "key": "speakerId",    "value": "", "type": "string" },
-    { "key": "roomId",       "value": "", "type": "string" },
-    { "key": "questionId",   "value": "", "type": "string" }
+    { "key": "eventId", "value": "", "type": "string" },
+    { "key": "sessionId", "value": "", "type": "string" },
+    { "key": "speakerId", "value": "", "type": "string" },
+    { "key": "roomId", "value": "", "type": "string" },
+    { "key": "questionId", "value": "", "type": "string" },
+    { "key": "category", "value": "TECHNOLOGY", "type": "string" }
   ],
   "item": [
-
     {
       "name": "🔐 Auth — Admin",
       "item": [
@@ -252,11 +252,96 @@
             "script": { "exec": [
               "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
               "const json = pm.response.json();",
-              "pm.test(\"réponse est un tableau\", () => pm.expect(json).to.be.an('array'));",
-              "if (json.length > 0) {",
-              "  pm.collectionVariables.set('eventId', json[0].id);",
-              "  console.log('✅ eventId sauvegardé:', json[0].id);",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "if (json.data.length > 0) {",
+              "  pm.collectionVariables.set('eventId', json.data[0].id);",
+              "  console.log('✅ eventId sauvegardé:', json.data[0].id);",
               "}"
+            ]}
+          }]
+        },
+        {
+          "name": "GET events filtrés par catégorie ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events?category={{category}}", "host": ["{{base_url}}"], "path": ["api","events"], "query": [{ "key": "category", "value": "{{category}}" }] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "pm.test(\"tous les events ont la bonne catégorie\", () => {",
+              "  json.data.forEach(event => {",
+              "    pm.expect(event.category).to.equal('{{category}}');",
+              "  });",
+              "});"
+            ]}
+          }]
+        },
+        {
+          "name": "GET events filtrés par recherche ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events?search=Dev", "host": ["{{base_url}}"], "path": ["api","events"], "query": [{ "key": "search", "value": "Dev" }] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "pm.test(\"les events contiennent le terme de recherche\", () => {",
+              "  json.data.forEach(event => {",
+              "    const searchTerm = 'dev';",
+              "    const titleMatch = event.title.toLowerCase().includes(searchTerm);",
+              "    const descMatch = event.description.toLowerCase().includes(searchTerm);",
+              "    pm.expect(titleMatch || descMatch).to.be.true;",
+              "  });",
+              "});"
+            ]}
+          }]
+        },
+        {
+          "name": "GET upcoming events ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events?upcoming=true", "host": ["{{base_url}}"], "path": ["api","events"], "query": [{ "key": "upcoming", "value": "true" }] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "pm.test(\"tous les events sont à venir\", () => {",
+              "  const now = new Date();",
+              "  json.data.forEach(event => {",
+              "    pm.expect(new Date(event.startDate)).to.be.at.least(now);",
+              "  });",
+              "});"
+            ]}
+          }]
+        },
+        {
+          "name": "GET past events ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events?past=true", "host": ["{{base_url}}"], "path": ["api","events"], "query": [{ "key": "past", "value": "true" }] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "pm.test(\"tous les events sont passés\", () => {",
+              "  const now = new Date();",
+              "  json.data.forEach(event => {",
+              "    pm.expect(new Date(event.endDate)).to.be.below(now);",
+              "  });",
+              "});"
             ]}
           }]
         },
@@ -271,8 +356,9 @@
             "script": { "exec": [
               "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
               "const json = pm.response.json();",
-              "pm.test(\"title présent\", () => pm.expect(json.title).to.be.a('string'));",
-              "pm.test(\"sessions présentes\", () => pm.expect(json.sessions).to.be.an('array'));"
+              "pm.test(\"title présent\", () => pm.expect(json.data.title).to.be.a('string'));",
+              "pm.test(\"category présente\", () => pm.expect(json.data.category).to.be.a('string'));",
+              "pm.test(\"sessions présentes\", () => pm.expect(json.data.sessions).to.be.an('array'));"
             ]}
           }]
         },
@@ -299,7 +385,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"DevSummit 2026\",\n  \"description\": \"Conférence annuelle des développeurs\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Lyon\"\n}",
+              "raw": "{\n  \"title\": \"DevSummit 2026\",\n  \"description\": \"Conférence annuelle des développeurs\",\n  \"category\": \"TECHNOLOGY\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Lyon\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
@@ -309,8 +395,57 @@
             "script": { "exec": [
               "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
               "const json = pm.response.json();",
-              "pm.collectionVariables.set('eventId', json.id);",
-              "console.log('✅ eventId sauvegardé:', json.id);"
+              "pm.test(\"category présente\", () => pm.expect(json.data.category).to.equal('TECHNOLOGY'));",
+              "pm.collectionVariables.set('eventId', json.data.id);",
+              "console.log('✅ eventId sauvegardé:', json.data.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer event — catégorie invalide ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Event avec catégorie invalide\",\n  \"description\": \"Test\",\n  \"category\": \"INVALID_CATEGORY\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Paris\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"erreur de catégorie\", () => {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.error).to.include('Invalid category');",
+              "});"
+            ]}
+          }]
+        },
+        {
+          "name": "POST créer event — sans catégorie ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Event sans catégorie\",\n  \"description\": \"Test\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Paris\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
             ]}
           }]
         },
@@ -343,7 +478,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Event non autorisé\",\n  \"description\": \"Test\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Paris\"\n}",
+              "raw": "{\n  \"title\": \"Event non autorisé\",\n  \"description\": \"Test\",\n  \"category\": \"TECHNOLOGY\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Paris\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{base_url}}/api/events", "host": ["{{base_url}}"], "path": ["api","events"] }
@@ -365,7 +500,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"DevSummit 2026 — Édition Mise à Jour\",\n  \"description\": \"Conférence mise à jour\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Lyon — Palais des Congrès\"\n}",
+              "raw": "{\n  \"title\": \"DevSummit 2026 — Édition Mise à Jour\",\n  \"description\": \"Conférence mise à jour\",\n  \"category\": \"CONFERENCE\",\n  \"startDate\": \"2026-09-10T09:00:00.000Z\",\n  \"endDate\": \"2026-09-10T18:00:00.000Z\",\n  \"location\": \"Lyon — Palais des Congrès\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": { "raw": "{{base_url}}/api/events/{{eventId}}", "host": ["{{base_url}}"], "path": ["api","events","{{eventId}}"] }
@@ -373,7 +508,9 @@
           "event": [{
             "listen": "test",
             "script": { "exec": [
-              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"catégorie mise à jour\", () => pm.expect(json.data.category).to.equal('CONFERENCE'));"
             ]}
           }]
         },
@@ -387,7 +524,81 @@
           "event": [{
             "listen": "test",
             "script": { "exec": [
-              "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "📊 Events - Statistiques & Recherche Avancée",
+      "item": [
+        {
+          "name": "GET statistiques des events ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events/statistics", "host": ["{{base_url}}"], "path": ["api","events","statistics"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"total présent\", () => pm.expect(json.data.total).to.be.a('number'));",
+              "pm.test(\"upcoming présent\", () => pm.expect(json.data.upcoming).to.be.a('number'));",
+              "pm.test(\"past présent\", () => pm.expect(json.data.past).to.be.a('number'));",
+              "pm.test(\"byCategory présent\", () => pm.expect(json.data.byCategory).to.be.an('array'));",
+              "console.log('📊 Statistiques:', json.data);"
+            ]}
+          }]
+        },
+        {
+          "name": "GET events par catégorie (route dédiée) ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events/category/TECHNOLOGY", "host": ["{{base_url}}"], "path": ["api","events","category","TECHNOLOGY"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "pm.test(\"tous les events ont la catégorie TECHNOLOGY\", () => {",
+              "  json.data.forEach(event => {",
+              "    pm.expect(event.category).to.equal('TECHNOLOGY');",
+              "  });",
+              "});"
+            ]}
+          }]
+        },
+        {
+          "name": "GET search events ✅",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events/search?q=Dev", "host": ["{{base_url}}"], "path": ["api","events","search"], "query": [{ "key": "q", "value": "Dev" }] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"data est un tableau\", () => pm.expect(json.data).to.be.an('array'));",
+              "pm.test(\"searchTerm présent\", () => pm.expect(json.searchTerm).to.be.a('string'));"
+            ]}
+          }]
+        },
+        {
+          "name": "GET search — sans query ❌",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/events/search", "host": ["{{base_url}}"], "path": ["api","events","search"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
             ]}
           }]
         }
@@ -774,25 +985,6 @@
           }]
         },
         {
-          "name": "POST créer question — session pas LIVE ❌",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"content\": \"Question sur une session pas encore commencée\",\n  \"sessionId\": \"ID_SESSION_FUTURE_ICI\",\n  \"authorName\": \"Test User\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": { "raw": "{{base_url}}/api/questions", "host": ["{{base_url}}"], "path": ["api","questions"] }
-          },
-          "event": [{
-            "listen": "test",
-            "script": { "exec": [
-              "pm.test(\"Status 400 — session pas live\", () => pm.response.to.have.status(400));"
-            ]}
-          }]
-        },
-        {
           "name": "POST créer question — content vide ❌",
           "request": {
             "method": "POST",
@@ -882,6 +1074,5 @@
         }
       ]
     }
-
   ]
 }
