@@ -134,7 +134,6 @@ export class EventService {
         return prisma.event.delete({ where: { id } });
     }
 
-    // Méthodes supplémentaires utiles
 
     static async getEventsByCategory(category: EventCategory) {
         return prisma.event.findMany({
