@@ -51,7 +51,7 @@ export class RoomController {
                 res.status(400).json({ message: "Id required" });
                 return;
             }
-            const sessions = await this.roomService.getRoomSessions(id);
+            const sessions = await this.roomService.getRoomById(id);
             res.json({ data: sessions });
         } catch (error) {
             res.status(500).json({ message: "Internal server error" });

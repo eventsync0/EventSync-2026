@@ -1,10 +1,17 @@
 import { SessionService } from "../services/session.service";
+import { RoomService } from "../services/room.service";
+import { EventService } from "../services/event.service";
 import { Response, Request } from "express";
 
 export class SessionController {
   private sessionService: SessionService;
+  private roomService: RoomService;
+  private eventService: EventService;
+
   constructor() {
     this.sessionService = new SessionService();
+    this.roomService = new RoomService();
+    this.eventService = new EventService();
   }
 
   getSessions = async (_req: Request, res: Response): Promise<void> => {
@@ -19,6 +26,12 @@ export class SessionController {
   getSessionById = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = req.params.id as string;
+
+      if (!id) {
+        res.status(400).json({ error: "Session ID is required" });
+        return;
+      }
+
       const session = await this.sessionService.getSessionById(id);
 
       if (!session) {
@@ -27,9 +40,9 @@ export class SessionController {
       }
 
       res.status(200).json({ data: session });
-    } catch (error) {
+    } catch (error: any) {
       console.error("GET SESSION BY ID ERROR:", error);
-      res.status(500).json({ error: "Server error" });
+      res.status(500).json({ error: "Server error", details: error.message });
     }
   };
 
@@ -59,12 +72,50 @@ export class SessionController {
         return;
       }
 
-      if (
-        !speakerIds ||
-        !Array.isArray(speakerIds) ||
-        speakerIds.length === 0
-      ) {
+      if (!speakerIds || !Array.isArray(speakerIds) || speakerIds.length === 0) {
         res.status(400).json({ message: "At least one speaker is required" });
+        return;
+      }
+
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      const startHour = start.getUTCHours();
+      const startMinute = start.getUTCMinutes();
+      const endHour = end.getUTCHours();
+      const endMinute = end.getUTCMinutes();
+      console.log("🔍 VALIDATION:", { startHour, startMinute, endHour, endMinute, startTime, endTime });
+
+
+      if (startHour < 7 || startHour > 19 || (startHour === 19 && startMinute > 59)) {
+        res.status(400).json({
+          message: "Session must start between 7:00 and 19:59"
+        });
+        return;
+      }
+
+      if (endHour < 7 || endHour >= 20) { 
+        res.status(400).json({
+          message: "Session must end between 7:00 and 20:00 (20:00 excluded)"
+        });
+        return;
+      }
+
+      if (start >= end) {
+        res.status(400).json({
+          message: "Start time must be before end time"
+        });
+        return;
+      }
+
+      const room = await this.roomService.getRoomById(roomId);
+      if (!room) {
+        res.status(400).json({ message: "Room does not exist" });
+        return;
+      }
+
+      const event = await EventService.getEventById(eventId);
+      if (!event) {
+        res.status(400).json({ message: "Event does not exist" });
         return;
       }
 
@@ -85,7 +136,12 @@ export class SessionController {
         res.status(400).json({ message: error.message });
         return;
       }
-    res.status(500).json({ message: "Internal server error" });
+      if (error.message === "One or more speakers do not exist") {
+        res.status(400).json({ message: error.message });
+        return;
+      }
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
     }
   };
 
@@ -120,12 +176,36 @@ export class SessionController {
         return;
       }
 
-      if (
-        !speakerIds ||
-        !Array.isArray(speakerIds) ||
-        speakerIds.length === 0
-      ) {
+      if (!speakerIds || !Array.isArray(speakerIds) || speakerIds.length === 0) {
         res.status(400).json({ message: "At least one speaker is required" });
+        return;
+      }
+
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      const startHour = start.getUTCHours();
+      const startMinute = start.getUTCMinutes();
+      const endHour = end.getUTCHours();
+      const endMinute = end.getUTCMinutes();
+
+      if (startHour < 7 || startHour > 19 || (startHour === 19 && startMinute > 59)) {
+        res.status(400).json({
+          message: "Session must start between 7:00 and 19:59"
+        });
+        return;
+      }
+
+      if (endHour < 7 || endHour > 20 || (endHour === 20 && endMinute > 0)) {
+        res.status(400).json({
+          message: "Session must end between 7:00 and 20:00 (20:00 excluded)"
+        });
+        return;
+      }
+
+      if (start >= end) {
+        res.status(400).json({
+          message: "Start time must be before end time"
+        });
         return;
       }
 
@@ -150,6 +230,7 @@ export class SessionController {
       res.status(500).json({ message: "Internal server error" });
     }
   };
+
   deleteSession = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params as { id: string };
