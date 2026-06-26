@@ -56,9 +56,11 @@ export const create = async (req: Request, res: Response) => {
   }
 };
 
+
 export const upvote = async (req: Request<{ id: string }>, res: Response) => {
   try {
     const { id } = req.params;
+    const { action } = req.body;
 
     const question = await prisma.question.findUnique({
       where: { id },
@@ -68,20 +70,36 @@ export const upvote = async (req: Request<{ id: string }>, res: Response) => {
     if (!question) {
       return res.status(404).json({ error: 'Question not found' });
     }
-    const isLive = computeIsLive(question.session.startTime, question.session.endTime);
+
+    const now = new Date();
+    const isLive = now >= new Date(question.session.startTime) && now <= new Date(question.session.endTime);
 
     if (!isLive) {
-      return res.status(400).json({ error: "Cannot upvote after session has ended" });
+      return res.status(400).json({ error: "Cannot vote after session has ended" });
     }
-    const updated = await QuestionService.upvoteQuestion(id);
 
-    res.status(200).json({
+    let newUpvotes = question.upvotes;
+
+    if (action === 'downvote') {
+      newUpvotes = question.upvotes > 0 ? question.upvotes - 1 : 0;
+    } else {
+      newUpvotes = question.upvotes + 1;
+    }
+
+    const updated = await prisma.question.update({
+      where: { id },
+      data: { upvotes: newUpvotes }
+    });
+
+    return res.status(200).json({
       data: { 
         ...updated, 
         authorName: updated.authorName ?? 'Anonymous' 
       },
     });
+
   } catch (error) {
-    res.status(500).json({ error: "Failed to upvote" });
+    console.error("Erreur lors du vote:", error);
+    return res.status(500).json({ error: "Failed to process vote" });
   }
 };
