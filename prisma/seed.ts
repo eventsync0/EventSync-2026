@@ -5,41 +5,36 @@ import bcrypt from "bcrypt";
 async function main() {
     console.log("🌱 Début du seeding...");
 
-    const existing = await prisma.admin.findUnique({
-        where: { email: "admin@eventsync.com" }
-    });
-
-    let adminUser;
-
-    if (existing) {
-        console.log("⚠️ Admin already exists");
-        adminUser = existing;
-    } else {
-        const passwordHash = await bcrypt.hash("adminpassword123", 10);
-
-        adminUser = await prisma.admin.create({
-            data: {
-                name: "Admin",
-                email: "admin@eventsync.com",
-                passwordHash
-            }
-        });
-
-        console.log("✅ Admin créé");
-    }
-
-    console.log("🗑️ Nettoyage...");
+    // ──────────────────────────────────────────────
+    // Nettoyage complet
+    // ──────────────────────────────────────────────
+    console.log("🗑️ Nettoyage complet...");
     await prisma.question.deleteMany({});
     await prisma.session.deleteMany({});
     await prisma.event.deleteMany({});
     await prisma.room.deleteMany({});
     await prisma.speakerLink.deleteMany({});
     await prisma.speaker.deleteMany({});
-    await prisma.refreshToken.deleteMany({ where: { adminId: adminUser.id } });
+    await prisma.refreshToken.deleteMany({});
+    await prisma.admin.deleteMany({});
     console.log("✅ Nettoyage terminé");
 
     // ──────────────────────────────────────────────
-    // ROOMS (30)
+    // ADMIN
+    // ──────────────────────────────────────────────
+    const passwordHash = await bcrypt.hash("adminpassword123", 10);
+
+    const adminUser = await prisma.admin.create({
+        data: {
+            name: "Admin",
+            email: "admin@eventsync.com",
+            passwordHash
+        }
+    });
+    console.log("✅ Admin créé");
+
+    // ──────────────────────────────────────────────
+    // ROOMS (20)
     // ──────────────────────────────────────────────
     const roomNames = [
         "Grand Amphithéâtre",
@@ -58,20 +53,10 @@ async function main() {
         "Salle VIP",
         "Studio Podcast",
         "Salle de Réunion 1",
-        "Salle de Réunion 2",
-        "Salle de Réunion 3",
-        "Salle de Réunion 4",
-        "Salle de Réunion 5",
         "Lab Innovation",
-        "Espace Co-working",
-        "Salle de Formation",
         "Hub Créatif",
-        "Studio Création",
         "Salle Polyvalente 1",
-        "Salle Polyvalente 2",
-        "Salle Polyvalente 3",
-        "Salle Polyvalente 4",
-        "Salle Polyvalente 5"
+        "Salle Polyvalente 2"
     ];
 
     const rooms = [];
@@ -135,81 +120,175 @@ async function main() {
     console.log(`✅ ${speakers.length} speakers créés`);
 
     // ──────────────────────────────────────────────
-    // EVENTS (30) — mix passés / en cours / à venir
+    // ÉVÉNEMENTS — Aujourd'hui jusqu'au 15 juillet
     // ──────────────────────────────────────────────
     const now = new Date();
-
-    function dayAt(offsetDays: number, hour: number, minute = 0) {
-        const d = new Date(now);
-        d.setDate(now.getDate() + offsetDays);
-        d.setHours(hour, minute, 0, 0);
-        return d;
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    // Date de début: aujourd'hui
+    let currentDate = new Date(currentYear, currentMonth, now.getDate());
+    // Date de fin: 15 juillet (ou 15 du mois en cours)
+    const targetDay = 15;
+    let endDate = new Date(currentYear, currentMonth, targetDay);
+    
+    // Si on est après le 15 du mois, prendre le 15 du mois prochain
+    if (now.getDate() > targetDay) {
+        endDate = new Date(currentYear, currentMonth + 1, targetDay);
     }
+    
+    console.log(`📅 Période: du ${currentDate.toLocaleDateString()} au ${endDate.toLocaleDateString()}`);
 
-    const eventDefs = [
-        // Passés (10 events)
-        { title: "DevFest 2025", description: "Le grand rendez-vous des développeurs", category: EventCategory.CONFERENCE, location: "Antananarivo", start: dayAt(-60, 9), end: dayAt(-60, 17) },
-        { title: "Cloud Summit 2025", description: "Architectures cloud-native et migration", category: EventCategory.TECHNOLOGY, location: "Lyon", start: dayAt(-55, 9), end: dayAt(-55, 18) },
-        { title: "UX Days 2025", description: "Conférence dédiée au design d'expérience utilisateur", category: EventCategory.WORKSHOP, location: "Bruxelles", start: dayAt(-50, 10), end: dayAt(-50, 16) },
-        { title: "AI Expo Europe", description: "Exposition sur l'intelligence artificielle", category: EventCategory.CONFERENCE, location: "Paris", start: dayAt(-45, 9), end: dayAt(-44, 18) },
-        { title: "Mobile World Congress", description: "Le plus grand salon du mobile", category: EventCategory.BUSINESS, location: "Barcelone", start: dayAt(-40, 9), end: dayAt(-38, 18) },
-        { title: "Data Science Summit", description: "Les dernières avancées en data science", category: EventCategory.EDUCATION, location: "Berlin", start: dayAt(-35, 9), end: dayAt(-35, 17) },
-        { title: "Cybersecurity Forum", description: "Sécurité informatique et cyberdéfense", category: EventCategory.CONFERENCE, location: "Londres", start: dayAt(-30, 9), end: dayAt(-29, 18) },
-        { title: "GreenTech Conference", description: "Technologies durables et écologie", category: EventCategory.TECHNOLOGY, location: "Stockholm", start: dayAt(-25, 9), end: dayAt(-25, 17) },
-        { title: "Startup Weekend", description: "Weekend de création de startups", category: EventCategory.WORKSHOP, location: "Lisbonne", start: dayAt(-20, 18), end: dayAt(-18, 22) },
-        { title: "Digital Marketing Expo", description: "Marketing digital et stratégies", category: EventCategory.BUSINESS, location: "Amsterdam", start: dayAt(-15, 9), end: dayAt(-15, 18) },
-        
-        // En cours (3 events)
-        { title: "Workshop React Live", description: "Session interactive React", category: EventCategory.WORKSHOP, location: "Zoom", start: new Date(now.getTime() - 2 * 3600000), end: new Date(now.getTime() + 3 * 3600000) },
-        { title: "Cloud Native Conference", description: "Kubernetes et microservices", category: EventCategory.TECHNOLOGY, location: "Online", start: new Date(now.getTime() - 1 * 3600000), end: new Date(now.getTime() + 5 * 3600000) },
-        { title: "Remote Work Summit", description: "Le futur du travail à distance", category: EventCategory.SOCIAL, location: "Virtual", start: new Date(now.getTime() - 3 * 3600000), end: new Date(now.getTime() + 2 * 3600000) },
-
-        // À venir (17 events)
-        { title: "Conférence Tech 2026", description: "IA + Web + Mobile", category: EventCategory.CONFERENCE, location: "Paris", start: dayAt(3, 10), end: dayAt(3, 18) },
-        { title: "AI Summit Madagascar", description: "Intelligence artificielle et impact local", category: EventCategory.TECHNOLOGY, location: "Antananarivo", start: dayAt(10, 9), end: dayAt(10, 17) },
-        { title: "DevOps Conf", description: "CI/CD, observabilité et infrastructure", category: EventCategory.TECHNOLOGY, location: "Marseille", start: dayAt(18, 9), end: dayAt(19, 18) },
-        { title: "Mobile World Tour", description: "Tendances du développement mobile", category: EventCategory.BUSINESS, location: "Genève", start: dayAt(25, 9), end: dayAt(25, 17) },
-        { title: "Security & Privacy Forum", description: "Cybersécurité et protection des données", category: EventCategory.CONFERENCE, location: "Bordeaux", start: dayAt(40, 9), end: dayAt(41, 17) },
-        { title: "Startup Pitch Night", description: "Soirée de pitchs pour startups", category: EventCategory.SOCIAL, location: "Antananarivo", start: dayAt(55, 18), end: dayAt(55, 22) },
-        { title: "Quantum Computing Symposium", description: "L'informatique quantique pour tous", category: EventCategory.CONFERENCE, location: "Zurich", start: dayAt(60, 9), end: dayAt(61, 17) },
-        { title: "AR/VR Expo", description: "Réalité augmentée et virtuelle", category: EventCategory.TECHNOLOGY, location: "San Francisco", start: dayAt(65, 9), end: dayAt(67, 18) },
-        { title: "Data Privacy Day", description: "Protection des données personnelles", category: EventCategory.EDUCATION, location: "Bruxelles", start: dayAt(70, 9), end: dayAt(70, 17) },
-        { title: "Agile Leadership Summit", description: "Leadership agile et transformation", category: EventCategory.BUSINESS, location: "Londres", start: dayAt(75, 9), end: dayAt(76, 18) },
-        { title: "Open Source Fest", description: "Célébration de l'open source", category: EventCategory.SOCIAL, location: "Berlin", start: dayAt(80, 10), end: dayAt(80, 22) },
-        { title: "Women in Tech", description: "Conférence pour les femmes dans la tech", category: EventCategory.CONFERENCE, location: "Paris", start: dayAt(85, 9), end: dayAt(85, 18) },
-        { title: "IoT Solutions Expo", description: "Internet des objets et solutions", category: EventCategory.TECHNOLOGY, location: "Amsterdam", start: dayAt(90, 9), end: dayAt(91, 17) },
-        { title: "Sustainability Tech", description: "Technologie pour un avenir durable", category: EventCategory.BUSINESS, location: "Stockholm", start: dayAt(95, 9), end: dayAt(95, 18) },
-        { title: "Deep Learning Workshop", description: "Atelier pratique deep learning", category: EventCategory.WORKSHOP, location: "Online", start: dayAt(100, 10), end: dayAt(100, 17) },
-        { title: "Blockchain Summit", description: "Blockchain et cryptomonnaies", category: EventCategory.CONFERENCE, location: "Dubai", start: dayAt(105, 9), end: dayAt(107, 18) },
-        { title: "Design Thinking Day", description: "Méthodes design thinking", category: EventCategory.WORKSHOP, location: "Barcelone", start: dayAt(110, 9), end: dayAt(110, 17) }
+    const eventDefs = [];
+    const eventTypes = [
+        EventCategory.CONFERENCE,
+        EventCategory.WORKSHOP,
+        EventCategory.TECHNOLOGY,
+        EventCategory.SEMINAR,
+        EventCategory.MEETUP,
+        EventCategory.SOCIAL,
+        EventCategory.EDUCATION,
+        EventCategory.BUSINESS
     ];
 
+    const eventTitles = [
+        "Tech Summit",
+        "Innovation Day",
+        "Developer Conference",
+        "AI & Machine Learning",
+        "Cloud Computing Expo",
+        "Cybersecurity Forum",
+        "DevOps Days",
+        "Mobile Development",
+        "Data Science Symposium",
+        "Blockchain Summit",
+        "UX/UI Design Conference",
+        "Agile Leadership",
+        "Digital Transformation",
+        "Startup Pitch Day",
+        "Open Source Festival",
+        "Women in Tech",
+        "IoT Solutions Expo",
+        "Sustainability Tech",
+        "Deep Learning Workshop",
+        "Remote Work Summit",
+        "Quantum Computing",
+        "AR/VR Expo",
+        "Data Privacy Day",
+        "Agile Leadership Summit",
+        "Open Source Fest"
+    ];
+
+    const locations = [
+        "Paris", "Lyon", "Marseille", "Antananarivo", "Bruxelles",
+        "Genève", "Londres", "Berlin", "Amsterdam", "Barcelone",
+        "Lisbonne", "Stockholm", "Zurich", "Dubai", "San Francisco",
+        "Online", "Virtual", "New York", "Tokyo", "Sydney",
+        "Singapour", "Toronto", "Seoul", "Milan", "Madrid"
+    ];
+
+    let eventCount = 0;
+    let specialEventDate = new Date(currentDate);
+    specialEventDate.setDate(specialEventDate.getDate() + 3); // 3 jours après aujourd'hui
+
+    // Parcourir chaque jour de aujourd'hui au 15 du mois
+    while (currentDate <= endDate) {
+        // Ne pas créer d'événements les samedis et dimanches
+        const dayOfWeek = currentDate.getDay();
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        
+        // 3 événements par jour (matin, midi, après-midi)
+        // Sauf les weekends où on en crée 2
+        const eventsPerDay = isWeekend ? 2 : 3;
+        
+        for (let e = 0; e < eventsPerDay; e++) {
+            const titleIndex = eventCount % eventTitles.length;
+            const typeIndex = eventCount % eventTypes.length;
+            const locationIndex = eventCount % locations.length;
+            
+            // Heures: 9h, 13h, 17h
+            const startHours = [9, 13, 17];
+            const startHour = startHours[e % startHours.length];
+            const startMinute = (eventCount * 13) % 60;
+            
+            const startDate = new Date(currentDate);
+            startDate.setHours(startHour, startMinute, 0, 0);
+            
+            // Durée: entre 2 et 4 heures
+            const durationHours = 2 + (eventCount % 3);
+            const endDateEvent = new Date(startDate);
+            endDateEvent.setHours(startDate.getHours() + durationHours);
+            
+            // Générer une description unique
+            const descriptions = [
+                "Une conférence incontournable sur les dernières tendances technologiques",
+                "Un événement dédié à l'innovation et au partage de connaissances",
+                "Rencontrez des experts et découvrez les meilleures pratiques",
+                "Une journée d'apprentissage et de networking exceptionnelle",
+                "Plongez au cœur des technologies de demain",
+                "Un rassemblement unique pour la communauté tech",
+                "Partagez, apprenez et innovez avec les meilleurs",
+                "Une expérience immersive dans le monde de la technologie",
+                "Découvrez les dernières avancées dans le domaine",
+                "Un événement interactif pour tous les passionnés"
+            ];
+            
+            // Marquer l'événement spécial (10 sessions)
+            const isSpecialEvent = currentDate.getDate() === specialEventDate.getDate() && 
+                                  currentDate.getMonth() === specialEventDate.getMonth() &&
+                                  e === 1; // Le 2ème événement de la journée
+            
+            eventDefs.push({
+                title: isSpecialEvent ? `🎯 MEGA CONFERENCE - ${eventTitles[titleIndex]}` : `${eventTitles[titleIndex]} ${eventCount + 1}`,
+                description: isSpecialEvent ? `🌟 ÉVÉNEMENT SPÉCIAL - ${descriptions[eventCount % descriptions.length]} - Avec 10 sessions exceptionnelles !` : descriptions[eventCount % descriptions.length],
+                category: eventTypes[typeIndex],
+                location: locations[locationIndex],
+                startDate: startDate,
+                endDate: endDateEvent,
+                isSpecial: isSpecialEvent,
+                specialSessions: isSpecialEvent ? 10 : 2
+            });
+            
+            eventCount++;
+        }
+        
+        // Passer au jour suivant
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    console.log(`📅 ${eventDefs.length} événements créés (dont 1 avec 10 sessions)`);
+
+    // Créer les événements
     const events = [];
+    let specialEvent = null;
+    
     for (const def of eventDefs) {
         const event = await prisma.event.create({
             data: {
                 title: def.title,
                 description: def.description,
                 category: def.category,
-                startDate: def.start,
-                endDate: def.end,
+                startDate: def.startDate,
+                endDate: def.endDate,
                 location: def.location
             }
         });
         events.push(event);
+        
+        if (def.isSpecial) {
+            specialEvent = { event, def };
+            console.log(`🌟 Événement spécial créé: ${def.title} avec ${def.specialSessions} sessions`);
+        }
     }
     console.log(`✅ ${events.length} events créés`);
 
     // ──────────────────────────────────────────────
-    // SESSIONS (30)
+    // SESSIONS (2 par événement, 10 pour le spécial)
     // ──────────────────────────────────────────────
     function plusMinutes(date: Date, minutes: number) {
         return new Date(date.getTime() + minutes * 60000);
     }
 
-    const sessionDefs = [];
-    
-    // Générer 30 sessions avec des speakers variés
     const sessionTitles = [
         "Keynote: Innovation & Future",
         "Deep Dive: Cloud Architecture",
@@ -231,70 +310,108 @@ async function main() {
         "Talk: Sustainable Tech",
         "Workshop: Product Management",
         "Technical Session: API Design",
-        "Keynote: Tech for Good",
-        "Workshop: Accessibility",
-        "Panel: Women in Leadership",
-        "Talk: Cloud Security",
-        "Workshop: Design Systems",
-        "Technical Session: GraphQL",
-        "Keynote: Future of Work",
-        "Workshop: Agile Methodologies",
+        "Workshop: GraphQL",
         "Panel: Tech Ethics",
-        "Talk: Innovation Strategies"
+        "Talk: Innovation Strategies",
+        "Workshop: Docker & Containers",
+        "Technical Session: Serverless"
     ];
 
-    for (let i = 0; i < 30; i++) {
-        const eventIdx = i % events.length;
-        const roomIdx = i % rooms.length;
-        const speakerCount = (i % 3) + 1; // 1 à 3 speakers par session
-        
-        const speakerIndices = [];
-        for (let j = 0; j < speakerCount; j++) {
-            speakerIndices.push((i + j * 5) % speakers.length);
-        }
-
-        const offsetMin = 60 + (i * 15) % 180;
-        const durationMin = 60 + (i * 5) % 90;
-
-        sessionDefs.push({
-            event: events[eventIdx],
-            room: rooms[roomIdx],
-            title: sessionTitles[i % sessionTitles.length] + ` ${i + 1}`,
-            description: `Session ${i + 1}: Description détaillée de la session sur ${sessionTitles[i % sessionTitles.length].toLowerCase()}`,
-            startOffsetMin: offsetMin,
-            durationMin: durationMin,
-            capacity: 50 + ((i * 7) % 200),
-            speakerIdx: speakerIndices
-        });
-    }
+    const sessionDescriptions = [
+        "Une session approfondie sur les sujets clés de la technologie",
+        "Atelier pratique avec des exercices concrets",
+        "Table ronde avec des experts du domaine",
+        "Présentation des dernières innovations",
+        "Formation intensive sur les meilleures pratiques",
+        "Discussion interactive avec le public",
+        "Démonstration en direct des fonctionnalités"
+    ];
 
     const sessions = [];
-    for (const def of sessionDefs) {
-        const sessionStart = plusMinutes(def.event.startDate, def.startOffsetMin);
-        const sessionEnd = plusMinutes(sessionStart, def.durationMin);
 
-        const session = await prisma.session.create({
-            data: {
-                title: def.title,
-                description: def.description,
-                startTime: sessionStart,
-                endTime: sessionEnd,
-                capacity: def.capacity,
-                eventId: def.event.id,
-                roomId: def.room.id,
-                speakers: {
-                    connect: def.speakerIdx.map((i) => ({ id: speakers[i].id }))
-                }
+    for (let i = 0; i < events.length; i++) {
+        const event = events[i];
+        const eventStart = event.startDate;
+        const isSpecialEvent = specialEvent && event.id === specialEvent.event.id;
+        
+        // Nombre de sessions: 10 pour le spécial, 2 pour les autres
+        const numSessions = isSpecialEvent ? 10 : 2;
+        
+        // Pour l'événement spécial, on étale les sessions sur toute la journée
+        let sessionInterval = 0;
+        if (isSpecialEvent) {
+            // 10 sessions sur 8 heures (de 9h à 17h)
+            sessionInterval = 45; // 45 minutes entre chaque session
+        }
+        
+        for (let s = 0; s < numSessions; s++) {
+            const roomIdx = (i + s) % rooms.length;
+            const speakerCount = 1 + (s % 2); // 1 ou 2 speakers
+            const speakerIndices = [];
+            
+            for (let sp = 0; sp < speakerCount; sp++) {
+                speakerIndices.push((i + s + sp * 7) % speakers.length);
             }
-        });
-        sessions.push(session);
+            
+            let startOffsetMin;
+            let duration;
+            
+            if (isSpecialEvent) {
+                // Sessions espacées de 45 minutes
+                startOffsetMin = 45 + (s * sessionInterval);
+                duration = 60 + (s % 2) * 15; // 1h ou 1h15
+            } else {
+                // Sessions normales: 45min et 2h30 après le début
+                if (s === 0) {
+                    startOffsetMin = 45;
+                } else {
+                    startOffsetMin = 150 + (s * 30);
+                }
+                duration = 60 + (s * 15);
+            }
+            
+            // S'assurer que la session ne dépasse pas la fin de l'event
+            const maxOffset = (event.endDate.getTime() - eventStart.getTime()) / 60000 - 45;
+            const adjustedOffset = Math.min(startOffsetMin, Math.max(30, maxOffset));
+            
+            const sessionStart = plusMinutes(eventStart, adjustedOffset);
+            const sessionEnd = plusMinutes(sessionStart, duration);
+            
+            // Éviter que la session dépasse l'event
+            const finalEnd = sessionEnd > event.endDate ? event.endDate : sessionEnd;
+            
+            const sessionTitle = isSpecialEvent 
+                ? `${sessionTitles[(s) % sessionTitles.length]} - Session ${s + 1}/10`
+                : `${sessionTitles[(i + s) % sessionTitles.length]} - Session ${s + 1}`;
+            
+            const session = await prisma.session.create({
+                data: {
+                    title: sessionTitle,
+                    description: isSpecialEvent 
+                        ? `Session ${s + 1}/10 de l'événement spécial - ${sessionDescriptions[(s) % sessionDescriptions.length]}`
+                        : sessionDescriptions[(i + s) % sessionDescriptions.length],
+                    startTime: sessionStart,
+                    endTime: finalEnd,
+                    capacity: isSpecialEvent ? 100 + (s * 10) : 50 + ((i + s) * 7) % 200,
+                    eventId: event.id,
+                    roomId: rooms[roomIdx].id,
+                    speakers: {
+                        connect: speakerIndices.map((idx) => ({ id: speakers[idx].id }))
+                    }
+                }
+            });
+            sessions.push(session);
+        }
+        
+        if (isSpecialEvent) {
+            console.log(`🌟 ${numSessions} sessions créées pour l'événement spécial`);
+        }
     }
-    console.log(`✅ ${sessions.length} sessions créées`);
+    console.log(`✅ ${sessions.length} sessions créées au total`);
 
     // ──────────────────────────────────────────────
-    // QUESTIONS (30)
+    // QUESTIONS (2 par session)
     // ──────────────────────────────────────────────
-    const questionDefs = [];
     const questionContents = [
         "Quels sont les prérequis pour cette session ?",
         "Comment puis-je approfondir ce sujet ?",
@@ -315,70 +432,40 @@ async function main() {
         "Quels tests mettre en place ?",
         "Comment évolue cette technologie ?",
         "Quel impact sur la productivité ?",
-        "Comment former mon équipe ?",
-        "Quel budget prévoir ?",
-        "Avez-vous des cas d'usage ?",
-        "Comment monter en compétence ?",
-        "Quelles sont les certifications ?",
-        "Comment migrer vers cette solution ?",
-        "Quels sont les défis à anticiper ?",
-        "Comment assurer la maintenance ?",
-        "Quel ROI attendre ?",
-        "Comment gérer le changement ?",
-        "Quels KPIs suivre ?"
+        "Comment former mon équipe ?"
     ];
 
     const authorNames = [
         "Marie Dupont", "Thomas Martin", "Fanja Rabe", "Hary Andry", "Sophie Laurent",
         "Karim Belkacem", "Tojo Rakoto", "Mialy Razafy", "Jean-Claude Rambo", "Mamy Andriamaro",
         "Anna Schmidt", "Pierre Dubois", "Lena Meyer", "Hugo Leclercq", "Emma Rousseau",
-        "Noah Fernandes", "Mia Kowalski", "Liam O'Brien", "Olivia Chen", "Ethan Patel",
-        null, null, null, null, null // Quelques questions anonymes
+        null, null, null, null, null // Questions anonymes
     ];
 
-    for (let i = 0; i < 30; i++) {
-        const sessionIdx = i % sessions.length;
-        const authorIdx = i % authorNames.length;
-        const upvotes = Math.floor(Math.random() * 20) + 1;
+    let questionCount = 0;
+    for (let i = 0; i < sessions.length; i++) {
+        const session = sessions[i];
+        // 2 questions par session
+        for (let q = 0; q < 2; q++) {
+            const contentIdx = (i + q) % questionContents.length;
+            const authorIdx = (i + q) % authorNames.length;
+            const upvotes = Math.floor(Math.random() * 20) + 1;
 
-        questionDefs.push({
-            content: questionContents[i % questionContents.length],
-            authorName: authorNames[authorIdx],
-            upvotes: upvotes,
-            sessionIdx: sessionIdx
-        });
+            await prisma.question.create({
+                data: {
+                    content: questionContents[contentIdx],
+                    authorName: authorNames[authorIdx],
+                    upvotes: upvotes,
+                    sessionId: session.id
+                }
+            });
+            questionCount++;
+        }
     }
-
-    for (const q of questionDefs) {
-        await prisma.question.create({
-            data: {
-                content: q.content,
-                authorName: q.authorName,
-                upvotes: q.upvotes,
-                sessionId: sessions[q.sessionIdx].id
-            }
-        });
-    }
-    console.log(`✅ ${questionDefs.length} questions créées`);
+    console.log(`✅ ${questionCount} questions créées (2 par session)`);
 
     // ──────────────────────────────────────────────
-    // Vérification : toutes les sessions ont ≥ 1 speaker
-    // ──────────────────────────────────────────────
-    const allSessions = await prisma.session.findMany({
-        include: { speakers: true }
-    });
-
-    const invalid = allSessions.filter(s => s.speakers.length === 0);
-
-    if (invalid.length > 0) {
-        console.error("❌ Sessions sans speakers :", invalid.map(s => s.title));
-        process.exit(1);
-    } else {
-        console.log("✅ Toutes les sessions ont au moins 1 speaker");
-    }
-
-    // ──────────────────────────────────────────────
-    // Ajout d'un refresh token pour l'admin
+    // Refresh Token pour l'admin
     // ──────────────────────────────────────────────
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -392,16 +479,57 @@ async function main() {
     });
 
     // ──────────────────────────────────────────────
-    // Statistiques par catégorie
+    // Statistiques
     // ──────────────────────────────────────────────
     const categoryStats = await prisma.event.groupBy({
         by: ['category'],
         _count: true
     });
 
-    console.log("\n📊 Statistiques par catégorie :");
+    const liveEvents = await prisma.event.count({
+        where: {
+            startDate: { lte: new Date() },
+            endDate: { gte: new Date() }
+        }
+    });
+
+    const futureEvents = await prisma.event.count({
+        where: {
+            startDate: { gt: new Date() }
+        }
+    });
+
+    const pastEvents = await prisma.event.count({
+        where: {
+            endDate: { lt: new Date() }
+        }
+    });
+
+    // Compter les sessions par événement
+    const eventsWithSessions = await prisma.event.findMany({
+        include: {
+            sessions: true
+        }
+    });
+
+    console.log("\n📊 Statistiques :");
+    console.log(`   Événements totaux: ${events.length}`);
+    console.log(`   Événements en cours: ${liveEvents}`);
+    console.log(`   Événements à venir: ${futureEvents}`);
+    console.log(`   Événements passés: ${pastEvents}`);
+    console.log(`   Sessions totales: ${sessions.length}`);
+    console.log(`   Questions totales: ${questionCount}`);
+    
+    // Afficher le nombre de sessions par événement
+    console.log("\n   Sessions par événement :");
+    for (const ev of eventsWithSessions) {
+        const isSpecial = ev.title.includes('🎯 MEGA CONFERENCE');
+        console.log(`      ${ev.title.substring(0, 40)}... : ${ev.sessions.length} session(s)${isSpecial ? ' 🌟' : ''}`);
+    }
+    
+    console.log("\n   Par catégorie :");
     for (const stat of categoryStats) {
-        console.log(`   ${stat.category}: ${stat._count} événement(s)`);
+        console.log(`      ${stat.category}: ${stat._count} événement(s)`);
     }
 
     console.log("\n🎉 SEED TERMINÉ !");
@@ -411,6 +539,11 @@ async function main() {
     console.log(`🗓️  Sessions   : ${await prisma.session.count()}`);
     console.log(`💬 Questions  : ${await prisma.question.count()}`);
     console.log(`🎤 Speakers   : ${await prisma.speaker.count()}`);
+    console.log(`📅 Période    : Aujourd'hui (${new Date().toLocaleDateString()}) jusqu'au ${endDate.toLocaleDateString()}`);
+    console.log(`📈 Événements par jour: 3 (2 le weekend)`);
+    console.log(`📈 Sessions par événement: 2 (sauf 1 avec 10 sessions 🌟)`);
+    console.log(`\n🌟 Événement spécial: ${specialEvent ? specialEvent.def.title : 'Non créé'}`);
+    console.log(`   avec 10 sessions sur toute la journée !`);
 }
 
 main()
