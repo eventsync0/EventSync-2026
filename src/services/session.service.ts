@@ -153,4 +153,29 @@ export class SessionService {
             throw error;
         }
     }
+
+    async getLiveSessions() {
+        try {
+            const now = new Date();
+            const sessions = await prisma.session.findMany({
+                where: {
+                    startTime: { lte: now },
+                    endTime: { gte: now }
+                },
+                include: {
+                    room: true,
+                    speakers: true,
+                    event: true
+                },
+                orderBy: {
+                    startTime: 'asc'
+                }
+            });
+
+            return sessions;
+        } catch (error) {
+            console.error('Error fetching live sessions:', error);
+            throw error;
+        }
+    }
 }

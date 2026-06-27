@@ -267,4 +267,21 @@ export class SessionController {
       });
     }
   };
+
+  getLiveSessions = async (_req: Request, res: Response): Promise<void> => {
+    try {
+      const liveSessions = await this.sessionService.getLiveSessions();
+
+      res.status(200).json({
+        data: liveSessions,
+        count: liveSessions.length
+      });
+    } catch (error: any) {
+      console.error('GET LIVE SESSIONS ERROR:', error);
+      res.status(500).json({
+        error: "Server error",
+        details: error.message
+      });
+    }
+  };
 }

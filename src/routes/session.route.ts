@@ -11,5 +11,6 @@ router.get("/:id", sessionController.getSessionById);
 router.get("/", sessionController.getSessions);
 router.delete("/:id",authMiddleware,sessionController.deleteSession);
 router.get('/sessions/room/:roomId', sessionController.getSessionsByRoom);
+router.get('/sessions/live', sessionController.getLiveSessions);
 
 export default router;
