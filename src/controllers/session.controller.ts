@@ -93,7 +93,7 @@ export class SessionController {
         return;
       }
 
-      if (endHour < 7 || endHour >= 20) { 
+      if (endHour < 7 || endHour >= 20) {
         res.status(400).json({
           message: "Session must end between 7:00 and 20:00 (20:00 excluded)"
         });
@@ -240,6 +240,31 @@ export class SessionController {
       res.status(200).json({ message: "Session deleted" });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
+    }
+  };
+
+
+  getSessionsByRoom = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const roomId = req.params.roomId as string;
+
+      if (!roomId) {
+        res.status(400).json({ error: "Room ID is required" });
+        return;
+      }
+
+      const sessions = await this.sessionService.getSessionsByRoom(roomId);
+
+      res.status(200).json({
+        data: sessions,
+        count: sessions.length
+      });
+    } catch (error: any) {
+      console.error('GET SESSIONS BY ROOM ERROR:', error);
+      res.status(500).json({
+        error: "Server error",
+        details: error.message
+      });
     }
   };
 }

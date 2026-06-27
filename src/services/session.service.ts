@@ -130,23 +130,23 @@ export class SessionService {
         }
     }
 
-    
+
     async getSessionsByRoom(roomId: string) {
         try {
             const sessions = await prisma.session.findMany({
-                where: { 
-                    roomId: roomId 
+                where: {
+                    roomId: roomId
                 },
                 include: {
                     room: true,
                     speakers: true,
                     event: true
                 },
-                orderBy: { 
-                    startTime: 'asc' 
+                orderBy: {
+                    startTime: 'asc'
                 }
             });
-            
+
             return sessions;
         } catch (error) {
             console.error('Error fetching sessions by room:', error);

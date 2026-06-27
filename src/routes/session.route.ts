@@ -9,5 +9,7 @@ router.post("/", authMiddleware, sessionController.postSession);
 router.put("/:id",authMiddleware,sessionController.putSession);
 router.get("/:id", sessionController.getSessionById);
 router.get("/", sessionController.getSessions);
-router.delete("/:id",authMiddleware,sessionController.deleteSession)
+router.delete("/:id",authMiddleware,sessionController.deleteSession);
+router.get('/sessions/room/:roomId', sessionController.getSessionsByRoom);
+
 export default router;
