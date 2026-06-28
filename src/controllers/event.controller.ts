@@ -1,4 +1,3 @@
-// controllers/event.controller.ts
 import { Request, Response } from 'express';
 import { EventService } from '../services/event.service';
 import { EventCategory } from '../config/generated/prisma/enums';
