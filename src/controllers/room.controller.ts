@@ -31,7 +31,6 @@ export class RoomController {
     }
   };
 
-  // ✅ Nouveau : GET /api/rooms/:id — nécessaire pour RoomShow et RoomEdit
   getRoom = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
