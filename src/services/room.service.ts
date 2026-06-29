@@ -38,4 +38,27 @@ export class RoomService {
       isLive: computeIsLive(s.startTime, s.endTime),
     }));
   }
+    async getSessionsWithRoom(id: string) {
+        const sessions = await prisma.session.findMany({
+            where: { roomId: id },
+            include: { room: true },
+            orderBy: { startTime: 'asc' }
+        });
+        return sessions.map(s => ({
+            ...s,
+            isLive: computeIsLive(s.startTime, s.endTime)
+        }));
+    }
+
+    async getRoomById(id: string) {
+        try {
+            const room = await prisma.room.findUnique({
+                where: { id }
+            });
+            return room;
+        } catch (error) {
+            console.error('Error fetching room:', error);
+            throw error;
+        }
+    }
 }

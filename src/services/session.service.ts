@@ -1,5 +1,5 @@
 import { prisma } from "../config/lib/prisma";
-import { computeIsLive } from "../utils/isLive"
+import { computeIsLive } from "../utils/isLive";
 export class SessionService {
 
     async getSessions() {
@@ -126,6 +126,55 @@ export class SessionService {
             });
         } catch (error) {
             console.error("Delete session error:", error);
+            throw error;
+        }
+    }
+
+
+    async getSessionsByRoom(roomId: string) {
+        try {
+            const sessions = await prisma.session.findMany({
+                where: {
+                    roomId: roomId
+                },
+                include: {
+                    room: true,
+                    speakers: true,
+                    event: true
+                },
+                orderBy: {
+                    startTime: 'asc'
+                }
+            });
+
+            return sessions;
+        } catch (error) {
+            console.error('Error fetching sessions by room:', error);
+            throw error;
+        }
+    }
+
+    async getLiveSessions() {
+        try {
+            const now = new Date();
+            const sessions = await prisma.session.findMany({
+                where: {
+                    startTime: { lte: now },
+                    endTime: { gte: now }
+                },
+                include: {
+                    room: true,
+                    speakers: true,
+                    event: true
+                },
+                orderBy: {
+                    startTime: 'asc'
+                }
+            });
+
+            return sessions;
+        } catch (error) {
+            console.error('Error fetching live sessions:', error);
             throw error;
         }
     }
