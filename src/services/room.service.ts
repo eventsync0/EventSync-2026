@@ -1,35 +1,41 @@
 import { prisma } from "../config/lib/prisma";
 
 function computeIsLive(startTime: Date, endTime: Date): boolean {
-    const now = new Date();
-    return now >= startTime && now <= endTime;
+  const now = new Date();
+  return now >= startTime && now <= endTime;
 }
 
 export class RoomService {
-    async postRoom(name: string) {
-        return prisma.room.create({
-            data: { name },
-            select: { name: true }
-        })
-    }
+  // ✅ id ajouté dans select — sans lui le backend renvoyait { name } sans id
+  async postRoom(name: string) {
+    return prisma.room.create({
+      data: { name },
+      select: { id: true, name: true },
+    });
+  }
 
-    async getRooms() {
-        return prisma.room.findMany({ orderBy: { name: 'asc' } })
-    }
+  async getRooms() {
+    return prisma.room.findMany({ orderBy: { name: "asc" } });
+  }
 
-    async deleteRoom(id: string) {
-        return prisma.room.delete({ where: { id } })
-    }
+  // ✅ Nouveau : récupère une seule room par id (nécessaire pour Show et Edit)
+  async getRoom(id: string) {
+    return prisma.room.findUniqueOrThrow({ where: { id } });
+  }
 
-    async getRoomById(id: string) {
-        const sessions = await prisma.session.findMany({
-            where: { roomId: id },
-            include: { room: true },
-            orderBy: { startTime: 'asc' }
-        })
-        return sessions.map(s => ({
-            ...s,
-            isLive: computeIsLive(s.startTime, s.endTime)
-        }))
-    }
+  async deleteRoom(id: string) {
+    return prisma.room.delete({ where: { id } });
+  }
+
+  async getRoomSessions(id: string) {
+    const sessions = await prisma.session.findMany({
+      where: { roomId: id },
+      include: { room: true },
+      orderBy: { startTime: "asc" },
+    });
+    return sessions.map((s) => ({
+      ...s,
+      isLive: computeIsLive(s.startTime, s.endTime),
+    }));
+  }
 }
