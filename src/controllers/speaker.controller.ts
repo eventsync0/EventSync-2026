@@ -1,25 +1,28 @@
 import { Request, Response } from "express";
-import { prisma } from "../config/lib/prisma";
+import { SpeakerService } from "../services/speaker.service";
 import { computeIsLive } from "../utils/isLive";
 
 export class SpeakerController {
 
     getAllSpeakers = async (_req: Request, res: Response) => {
         try {
-            const speakers = await prisma.speaker.findMany({
-                include: {
-                    links: true, 
-                },
-                orderBy: {
-                    fullName: "asc",
-                },
-            });
+            const speakers = await SpeakerService.getSpeakers();
+
+            // ajout du lien session (comme ton ancien code)
+            const speakersWithSessionLinks = speakers.map((speaker) => ({
+                ...speaker,
+                sessions: speaker.sessions.map((session) => ({
+                    ...session,
+                    sessionUrl: `/sessions/${session.id}`,
+                })),
+            }));
 
             return res.status(200).json({
                 success: true,
                 count: speakers.length,
-                data: speakers,
+                data: speakersWithSessionLinks,
             });
+
         } catch (error) {
             console.error("GET ALL SPEAKERS ERROR:", error);
 
@@ -30,27 +33,11 @@ export class SpeakerController {
         }
     };
 
-
     getSpeakerById = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
 
-            const speaker = await prisma.speaker.findUnique({
-                where: { id } as {id :string},
-                include: {
-                    links: true,
-                    sessions: {
-                        include: {
-                            room: true,
-                            questions: {
-                                orderBy: {
-                                    upvotes: "desc",
-                                },
-                            },
-                        },
-                    },
-                },
-            });
+            const speaker = await SpeakerService.getSpeakerById(id);
 
             if (!speaker) {
                 return res.status(404).json({
@@ -80,6 +67,7 @@ export class SpeakerController {
                     sessions: enrichedSessions,
                 },
             });
+
         } catch (error) {
             console.error("GET SPEAKER BY ID ERROR:", error);
 
@@ -89,7 +77,6 @@ export class SpeakerController {
             });
         }
     };
-
 
     createSpeaker = async (req: Request, res: Response) => {
         try {
@@ -102,29 +89,18 @@ export class SpeakerController {
                 });
             }
 
-            const speaker = await prisma.speaker.create({
-                data: {
-                    fullName,
-                    photoUrl: photoUrl || null,
-                    bio: bio || null,
-                    links: speakerLinks?.length
-                        ? {
-                                create: speakerLinks.map((link: any) => ({
-                                    platform: link.platform,
-                                    url: link.url,
-                                })),
-                            }
-                        : undefined,
-                },
-                include: {
-                    links: true,
-                },
+            const speaker = await SpeakerService.createSpeaker({
+                fullName,
+                photoUrl,
+                bio,
+                speakerLinks,
             });
 
             return res.status(201).json({
                 success: true,
                 data: speaker,
             });
+
         } catch (error) {
             console.error("CREATE SPEAKER ERROR:", error);
 
@@ -143,46 +119,18 @@ export class SpeakerController {
             const { id } = req.params;
             const { fullName, photoUrl, bio, links } = req.body;
 
-            const existingSpeaker = await prisma.speaker.findUnique({
-                where: { id } as {id :string},
-            });
-
-            if (!existingSpeaker) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Speaker not found",
-                });
-            }
-
-            // supprimer anciens liens
-            await prisma.speakerLink.deleteMany({
-                where: { speakerId: id } as {speakerId :string},
-            });
-
-            const speaker = await prisma.speaker.update({
-                where: { id } as {id :string},
-                data: {
-                    fullName,
-                    photoUrl,
-                    bio,
-                    links: links?.length
-                        ? {
-                                create: links.map((link: any) => ({
-                                    platform: link.platform,
-                                    url: link.url,
-                                })),
-                            }
-                        : undefined,
-                },
-                include: {
-                    links: true,
-                },
+            const updatedSpeaker = await SpeakerService.updateSpeaker(id, {
+                fullName,
+                photoUrl,
+                bio,
+                links,
             });
 
             return res.status(200).json({
                 success: true,
-                data: speaker,
+                data: updatedSpeaker,
             });
+
         } catch (error) {
             console.error("UPDATE SPEAKER ERROR:", error);
 
@@ -197,25 +145,22 @@ export class SpeakerController {
         try {
             const { id } = req.params;
 
-            const existingSpeaker = await prisma.speaker.findUnique({
-                where: { id } as {id :string},
-            });
+            const existing = await SpeakerService.getSpeakerById(id);
 
-            if (!existingSpeaker) {
+            if (!existing) {
                 return res.status(404).json({
                     success: false,
                     message: "Speaker not found",
                 });
             }
 
-            await prisma.speaker.delete({
-                where: { id } as {id :string},
-            });
+            await SpeakerService.deleteSpeaker(id);
 
             return res.status(200).json({
                 success: true,
                 message: "Speaker deleted successfully",
             });
+
         } catch (error) {
             console.error("DELETE SPEAKER ERROR:", error);
 
