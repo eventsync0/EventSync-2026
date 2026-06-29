@@ -1,4 +1,3 @@
-// src/routes/speaker.route.ts
 import { Router } from "express";
 import { SpeakerController } from "../controllers/speaker.controller";
 import { adminMiddleware } from "../middlewares/admin.middleware";

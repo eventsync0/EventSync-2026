@@ -1,4 +1,3 @@
-// middlewares/auth.middleware.ts
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/lib/prisma";
 import jwt from "jsonwebtoken";
@@ -37,7 +36,6 @@ export const authMiddleware = async (
                 id: true,
                 email: true,
                 name: true,
-              // Assurez-vous d'avoir un champ 'role' dans votre modèle Admin
             }
         });
 
@@ -45,7 +43,6 @@ export const authMiddleware = async (
             return res.status(401).json({ error: "Admin not found" });
         }
 
-        // Attacher l'utilisateur à la requête
         req.userId = user.id;
         req.user = user;
         
@@ -71,7 +68,6 @@ export const adminMiddleware = async (
             return res.status(401).json({ error: "User not authenticated" });
         }
 
-        // Vérifier si l'utilisateur est admin
         const isAdmin = req.user.email === "admin@eventsync.com" || req.user.role === "admin";
         
         if (!isAdmin) {

@@ -1,4 +1,3 @@
-// app.ts
 import express from 'express'
 import cors from 'cors'
 import "dotenv/config";
@@ -34,8 +33,6 @@ export const createApp = () => {
     app.use('/api/events', eventRoutes)
     app.use('/api/speakers', speakerRoutes)
     app.use('/api', questionRoutes)
-    
-    // Route des statistiques
     app.get('/api/stats', async (_req, res) => {
         try {
             const now = new Date();

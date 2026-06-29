@@ -1,4 +1,3 @@
-// services/EventService.ts
 import { EventCategory } from "../config/generated/prisma/enums";
 import { prisma } from "../config/lib/prisma";
 
