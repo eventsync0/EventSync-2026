@@ -1,4 +1,3 @@
-// src/routes/session.route.ts
 import { SessionController } from "../controllers/session.controller";
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/admin.middleware";

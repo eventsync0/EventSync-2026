@@ -1,4 +1,3 @@
-// server.ts
 import { createApp } from './app'
 
 const PORT = Number(process.env.PORT) || 3001

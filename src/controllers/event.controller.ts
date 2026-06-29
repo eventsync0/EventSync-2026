@@ -365,7 +365,7 @@ export class EventController {
         }
     }
 
-    getEventsStatistics = async (req: Request, res: Response): Promise<void> => {
+    getEventsStatistics = async (_req: Request, res: Response): Promise<void> => {
         try {
             const totalEvents = await EventService.getEvents();
             const now = new Date();
