@@ -1,7 +1,9 @@
+// src/services/event.service.ts
 import { EventCategory } from "../config/generated/prisma/enums";
 import { prisma } from "../config/lib/prisma";
 
 export class EventService {
+
     static async getEvents() {
         return prisma.event.findMany({
             orderBy: { startDate: 'asc' },
@@ -69,6 +71,23 @@ export class EventService {
         });
     }
 
+    static async getEventWithSessions(id: string) {
+        return prisma.event.findUnique({
+            where: { id },
+            include: {
+                sessions: {
+                    orderBy: { startTime: 'asc' },
+                    include: {
+                        room: true,
+                        speakers: true,
+                        questions: true,
+                    }
+                }
+            }
+        });
+    }
+
+  
     static async createEvents(data: { 
         title: string;
         description: string;
@@ -114,7 +133,8 @@ export class EventService {
         });
         return event;
     }
-    
+
+  
     static async updateEvent(id: string, data: { 
         title?: string; 
         description?: string; 
@@ -130,9 +150,19 @@ export class EventService {
     }
 
     static async deleteEvent(id: string) {
-        return prisma.event.delete({ where: { id } });
+        try {
+            const event = await prisma.event.findUnique({ where: { id } });
+    
+            if (!event) {
+                throw new Error("Event not found");
+            }
+    
+            return await prisma.event.delete({ where: { id } });
+        } catch (error) {
+            console.error('Error in deleteEvent:', error);
+            throw error;
+        }
     }
-
 
     static async getEventsByCategory(category: EventCategory) {
         return prisma.event.findMany({

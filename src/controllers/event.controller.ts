@@ -51,7 +51,6 @@ export class EventController {
                 events = await EventService.getPastEvents();
                 metadata = { type: 'past' };
             } else if (category && !search && !startDate && !endDate) {
-              
                 events = await EventService.getEventsByCategory(category as EventCategory);
                 metadata = { category };
             } else if (Object.keys(filters).length > 0) {
@@ -107,10 +106,11 @@ export class EventController {
         }
     }
 
+
     createEvent = async (req: Request, res: Response): Promise<void> => {
         try {
             const data = req.body;
-            
+
             const isArray = Array.isArray(data);
             const events = isArray ? data : [data];
             
@@ -164,7 +164,7 @@ export class EventController {
                 });
                 return;
             }
-            
+
             const dateErrors: Array<{ index: number; error: string }> = [];
             const formattedEvents = events.map((event, index) => {
                 const startDate = new Date(event.startDate);
@@ -212,7 +212,7 @@ export class EventController {
                 });
                 return;
             }
-            
+  
             const result = await EventService.createEvents(validEvents);
             
             const createdEvents = await Promise.all(
@@ -242,9 +242,11 @@ export class EventController {
         }
     }
 
+    // Note : les sessions ne se gèrent plus depuis cet endpoint. Utiliser les
+    // endpoints dédiés /api/sessions pour créer/modifier/supprimer une session.
     updateEvent = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { id } = req.params as { id: string };
+            const { id } = req.params;
             const { title, description, category, startDate, endDate, location } = req.body;
 
             const existingEvent = await EventService.getEventById(id);
@@ -299,12 +301,14 @@ export class EventController {
                 return;
             }
 
-            const updatedEvent = await EventService.updateEvent(id, updateData);
+            await EventService.updateEvent(id, updateData);
+
+            const eventWithSessions = await EventService.getEventWithSessions(id);
 
             res.status(200).json({
                 success: true,
                 message: "Event updated successfully",
-                data: updatedEvent
+                data: eventWithSessions
             });
         } catch (error) {
             console.error('Error in updateEvent:', error);
@@ -314,9 +318,11 @@ export class EventController {
         }
     }
 
+    // La suppression entraîne la suppression en cascade des sessions associées
+    // (et de leurs questions), gérée au niveau base de données (onDelete: Cascade).
     deleteEvent = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { id } = req.params as { id: string };
+            const { id } = req.params;
 
             const existingEvent = await EventService.getEventById(id);
             if (!existingEvent) {
@@ -420,6 +426,49 @@ export class EventController {
             console.error('Error in searchEvents:', error);
             res.status(500).json({ 
                 error: error instanceof Error ? error.message : "Failed to search events" 
+            });
+        }
+    }
+
+    getEventsInDateRange = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { startDate, endDate } = req.query;
+
+            if (!startDate || !endDate) {
+                res.status(400).json({ 
+                    error: "Both startDate and endDate are required" 
+                });
+                return;
+            }
+
+            const start = new Date(startDate as string);
+            const end = new Date(endDate as string);
+
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                res.status(400).json({ error: "Invalid date format" });
+                return;
+            }
+
+            if (start >= end) {
+                res.status(400).json({ 
+                    error: "Start date must be before end date" 
+                });
+                return;
+            }
+
+            const events = await EventService.getEventsInDateRange(start, end);
+
+            res.status(200).json({
+                success: true,
+                data: events,
+                count: events.length,
+                startDate: start,
+                endDate: end
+            });
+        } catch (error) {
+            console.error('Error in getEventsInDateRange:', error);
+            res.status(500).json({ 
+                error: error instanceof Error ? error.message : "Failed to retrieve events in date range" 
             });
         }
     }
