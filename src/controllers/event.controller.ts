@@ -242,8 +242,6 @@ export class EventController {
         }
     }
 
-    // Note : les sessions ne se gèrent plus depuis cet endpoint. Utiliser les
-    // endpoints dédiés /api/sessions pour créer/modifier/supprimer une session.
     updateEvent = async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
@@ -318,8 +316,6 @@ export class EventController {
         }
     }
 
-    // La suppression entraîne la suppression en cascade des sessions associées
-    // (et de leurs questions), gérée au niveau base de données (onDelete: Cascade).
     deleteEvent = async (req: Request, res: Response): Promise<void> => {
         try {
             const { id } = req.params;
