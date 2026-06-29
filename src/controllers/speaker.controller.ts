@@ -3,36 +3,31 @@ import { SpeakerService } from "../services/speaker.service";
 import { computeIsLive } from "../utils/isLive";
 
 export class SpeakerController {
-
+    /**
+     * GET /speakers
+     */
     getAllSpeakers = async (_req: Request, res: Response) => {
         try {
             const speakers = await SpeakerService.getSpeakers();
 
-            // ajout du lien session (comme ton ancien code)
-            const speakersWithSessionLinks = speakers.map((speaker) => ({
-                ...speaker,
-                sessions: speaker.sessions.map((session) => ({
-                    ...session,
-                    sessionUrl: `/sessions/${session.id}`,
-                })),
-            }));
-
             return res.status(200).json({
                 success: true,
                 count: speakers.length,
-                data: speakersWithSessionLinks,
+                data: speakers,
             });
-
         } catch (error) {
             console.error("GET ALL SPEAKERS ERROR:", error);
 
             return res.status(500).json({
                 success: false,
-                message: "Server error while fetching speakers",
+                message: "Error while fetching speakers",
             });
         }
     };
 
+    /**
+     * GET /speakers/:id
+     */
     getSpeakerById = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
@@ -46,15 +41,14 @@ export class SpeakerController {
                 });
             }
 
-            const enrichedSessions = speaker.sessions.map((session) => ({
+            // enrich sessions (live + safe fallback)
+            const sessions = speaker.sessions.map((session) => ({
                 ...session,
-
                 isLive: computeIsLive(
                     new Date(session.startTime),
                     new Date(session.endTime)
                 ),
-
-                questions: session.questions.map((q) => ({
+                questions: session.questions?.map((q) => ({
                     ...q,
                     authorName: q.authorName ?? "Anonymous",
                 })),
@@ -64,20 +58,22 @@ export class SpeakerController {
                 success: true,
                 data: {
                     ...speaker,
-                    sessions: enrichedSessions,
+                    sessions,
                 },
             });
-
         } catch (error) {
             console.error("GET SPEAKER BY ID ERROR:", error);
 
             return res.status(500).json({
                 success: false,
-                message: "Server error while fetching speaker",
+                message: "Error while fetching speaker",
             });
         }
     };
 
+    /**
+     * POST /speakers
+     */
     createSpeaker = async (req: Request, res: Response) => {
         try {
             const { fullName, photoUrl, bio, speakerLinks } = req.body;
@@ -100,7 +96,6 @@ export class SpeakerController {
                 success: true,
                 data: speaker,
             });
-
         } catch (error) {
             console.error("CREATE SPEAKER ERROR:", error);
 
@@ -114,12 +109,15 @@ export class SpeakerController {
         }
     };
 
+    /**
+     * PUT /speakers/:id
+     */
     updateSpeaker = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
             const { fullName, photoUrl, bio, links } = req.body;
 
-            const updatedSpeaker = await SpeakerService.updateSpeaker(id, {
+            const updated = await SpeakerService.updateSpeaker(id, {
                 fullName,
                 photoUrl,
                 bio,
@@ -128,19 +126,24 @@ export class SpeakerController {
 
             return res.status(200).json({
                 success: true,
-                data: updatedSpeaker,
+                data: updated,
             });
-
         } catch (error) {
             console.error("UPDATE SPEAKER ERROR:", error);
 
             return res.status(500).json({
                 success: false,
-                message: "Error while updating speaker",
+                message:
+                    error instanceof Error
+                        ? error.message
+                        : "Error while updating speaker",
             });
         }
     };
 
+    /**
+     * DELETE /speakers/:id
+     */
     deleteSpeaker = async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
@@ -160,7 +163,6 @@ export class SpeakerController {
                 success: true,
                 message: "Speaker deleted successfully",
             });
-
         } catch (error) {
             console.error("DELETE SPEAKER ERROR:", error);
 

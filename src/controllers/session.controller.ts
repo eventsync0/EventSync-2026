@@ -79,10 +79,10 @@ export class SessionController {
 
       const start = new Date(startTime);
       const end = new Date(endTime);
-      const startHour = start.getUTCHours();
-      const startMinute = start.getUTCMinutes();
-      const endHour = end.getUTCHours();
-      const endMinute = end.getUTCMinutes();
+      const startHour = start.getHours();
+      const startMinute = start.getMinutes();
+      const endHour = end.getHours();
+      const endMinute = end.getMinutes();
       console.log("🔍 VALIDATION:", { startHour, startMinute, endHour, endMinute, startTime, endTime });
 
 
@@ -183,10 +183,10 @@ export class SessionController {
 
       const start = new Date(startTime);
       const end = new Date(endTime);
-      const startHour = start.getUTCHours();
-      const startMinute = start.getUTCMinutes();
-      const endHour = end.getUTCHours();
-      const endMinute = end.getUTCMinutes();
+      const startHour = start.getHours(); 
+      const startMinute = start.getMinutes();
+      const endHour = end.getHours();
+      const endMinute = end.getMinutes(); 
 
       if (startHour < 7 || startHour > 19 || (startHour === 19 && startMinute > 59)) {
         res.status(400).json({
